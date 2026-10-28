@@ -1,0 +1,6 @@
+{
+  "name": "DevForge CLI Studio",
+  "description": "Central de desenvolvimento local unificando Grok CLI, Gemini CLI, Codex CLI e GitHub CLI com edição de código, automação de documentação, revisão por IA, gestão de dependências e pipeline CI/CD.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
