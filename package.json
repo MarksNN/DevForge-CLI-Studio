@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx --test src/utils/cliEngine.test.ts src/orchestrator/orchestrator.test.ts src/server/executeOrchestrator.test.ts src/server/grokSession.test.ts"
+    "test": "tsx --test src/utils/cliEngine.test.ts src/orchestrator/orchestrator.test.ts src/server/executeOrchestrator.test.ts src/server/grokSession.test.ts src/core/universalAgents.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

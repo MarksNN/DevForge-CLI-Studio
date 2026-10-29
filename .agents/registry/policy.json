@@ -1,0 +1,31 @@
+{
+  "cliStatus": "NOT_VERIFIED",
+  "permissionsAreDeclarationsOnly": true,
+  "system": "DevForge CLI Studio",
+  "cliRuntimeImplemented": false,
+  "independentReviewerId": "24",
+  "optionalRealityVerificationId": "22",
+  "total": 29,
+  "coordinatorId": "00",
+  "reservedReassignedIds": [
+    "19",
+    "20",
+    "25"
+  ],
+  "memoryImplemented": false,
+  "mutualExclusion": [
+    [
+      "01",
+      "01A"
+    ],
+    [
+      "06",
+      "06A"
+    ],
+    [
+      "08",
+      "08A"
+    ]
+  ],
+  "note": "Este instalador escreve arquivos de configuracao, nao implementa runtime ou instalacao de CLIs."
+}

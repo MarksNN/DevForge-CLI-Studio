@@ -1,0 +1,458 @@
+[
+  {
+    "scope": "user",
+    "owner_id": "user_master",
+    "agent_id": "00",
+    "project_id": null,
+    "type": "preference",
+    "content": "Prefiro funções utilitárias exportadas com nomes camelCase e JSDoc em português.",
+    "source_type": "user_feedback",
+    "source_reference": "Interação direta no chatbook",
+    "confidence": 1,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286218318_r9by1",
+    "created_at": "2026-10-29T15:03:38.318Z",
+    "updated_at": "2026-10-29T15:03:38.318Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "Prefiro funções utilitárias exportadas com nomes camelCase e JSDoc em português.",
+        "updated_at": "2026-10-29T15:03:38.318Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "shared",
+    "owner_id": "agent_08",
+    "agent_id": "08",
+    "project_id": "devforge-default",
+    "type": "lesson",
+    "content": "[Lição Reutilizável]: Sempre indexar chaves estrangeiras em consultas de alto volume. | Contexto: Timeout em queries não indexadas -> Solução: Adição de index no schema",
+    "source_type": "observation",
+    "source_reference": "Execution event from agent 08",
+    "confidence": 0.95,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": true,
+    "memory_id": "mem_1793286218347_ofiid",
+    "created_at": "2026-10-29T15:03:38.347Z",
+    "updated_at": "2026-10-29T15:03:38.347Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "[Lição Reutilizável]: Sempre indexar chaves estrangeiras em consultas de alto volume. | Contexto: Timeout em queries não indexadas -> Solução: Adição de index no schema",
+        "updated_at": "2026-10-29T15:03:38.347Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "project",
+    "owner_id": "agent_01",
+    "agent_id": "01",
+    "project_id": "projeto-alpha",
+    "type": "fact",
+    "content": "Configuração confidencial do Projeto Alpha: porta interna 9090.",
+    "source_type": "observation",
+    "source_reference": "alpha-config",
+    "confidence": 1,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286218358_mxe6n",
+    "created_at": "2026-10-29T15:03:38.358Z",
+    "updated_at": "2026-10-29T15:03:38.358Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "Configuração confidencial do Projeto Alpha: porta interna 9090.",
+        "updated_at": "2026-10-29T15:03:38.358Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "agent",
+    "owner_id": "agent_03",
+    "agent_id": "03",
+    "project_id": null,
+    "type": "skill",
+    "content": "Utilizar rigorosamente contraste 4.5:1 (WCAG AA) para botões.",
+    "source_type": "observation",
+    "source_reference": "ref-1",
+    "confidence": 0.7,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286218365_77325",
+    "created_at": "2026-10-29T15:03:38.365Z",
+    "updated_at": "2026-10-29T15:03:38.366Z",
+    "version": 2,
+    "history": [
+      {
+        "version": 1,
+        "content": "Utilizar sempre contraste 3:1 para botões secundários.",
+        "updated_at": "2026-10-29T15:03:38.365Z",
+        "reason": "Initial creation"
+      },
+      {
+        "version": 2,
+        "content": "Utilizar rigorosamente contraste 4.5:1 (WCAG AA) para botões.",
+        "updated_at": "2026-10-29T15:03:38.366Z",
+        "reason": "Correção de acessibilidade"
+      }
+    ]
+  },
+  {
+    "scope": "user",
+    "owner_id": "user_master",
+    "agent_id": "00",
+    "project_id": null,
+    "type": "preference",
+    "content": "Prefiro funções utilitárias exportadas com nomes camelCase e JSDoc em português.",
+    "source_type": "user_feedback",
+    "source_reference": "Interação direta no chatbook",
+    "confidence": 1,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286315270_ixfj2",
+    "created_at": "2026-10-29T15:05:15.270Z",
+    "updated_at": "2026-10-29T15:05:15.270Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "Prefiro funções utilitárias exportadas com nomes camelCase e JSDoc em português.",
+        "updated_at": "2026-10-29T15:05:15.270Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "shared",
+    "owner_id": "agent_08",
+    "agent_id": "08",
+    "project_id": "devforge-default",
+    "type": "lesson",
+    "content": "[Lição Reutilizável]: Sempre indexar chaves estrangeiras em consultas de alto volume. | Contexto: Timeout em queries não indexadas -> Solução: Adição de index no schema",
+    "source_type": "observation",
+    "source_reference": "Execution event from agent 08",
+    "confidence": 0.95,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": true,
+    "memory_id": "mem_1793286315272_bfcbg",
+    "created_at": "2026-10-29T15:05:15.272Z",
+    "updated_at": "2026-10-29T15:05:15.272Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "[Lição Reutilizável]: Sempre indexar chaves estrangeiras em consultas de alto volume. | Contexto: Timeout em queries não indexadas -> Solução: Adição de index no schema",
+        "updated_at": "2026-10-29T15:05:15.272Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "project",
+    "owner_id": "agent_01",
+    "agent_id": "01",
+    "project_id": "projeto-alpha",
+    "type": "fact",
+    "content": "Configuração confidencial do Projeto Alpha: porta interna 9090.",
+    "source_type": "observation",
+    "source_reference": "alpha-config",
+    "confidence": 1,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286315274_57tyy",
+    "created_at": "2026-10-29T15:05:15.274Z",
+    "updated_at": "2026-10-29T15:05:15.274Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "Configuração confidencial do Projeto Alpha: porta interna 9090.",
+        "updated_at": "2026-10-29T15:05:15.274Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "agent",
+    "owner_id": "agent_03",
+    "agent_id": "03",
+    "project_id": null,
+    "type": "skill",
+    "content": "Utilizar rigorosamente contraste 4.5:1 (WCAG AA) para botões.",
+    "source_type": "observation",
+    "source_reference": "ref-1",
+    "confidence": 0.7,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286315278_g3s1h",
+    "created_at": "2026-10-29T15:05:15.278Z",
+    "updated_at": "2026-10-29T15:05:15.278Z",
+    "version": 2,
+    "history": [
+      {
+        "version": 1,
+        "content": "Utilizar sempre contraste 3:1 para botões secundários.",
+        "updated_at": "2026-10-29T15:05:15.278Z",
+        "reason": "Initial creation"
+      },
+      {
+        "version": 2,
+        "content": "Utilizar rigorosamente contraste 4.5:1 (WCAG AA) para botões.",
+        "updated_at": "2026-10-29T15:05:15.278Z",
+        "reason": "Correção de acessibilidade"
+      }
+    ]
+  },
+  {
+    "scope": "user",
+    "owner_id": "user_master",
+    "agent_id": "00",
+    "project_id": null,
+    "type": "preference",
+    "content": "Prefiro funções utilitárias exportadas com nomes camelCase e JSDoc em português.",
+    "source_type": "user_feedback",
+    "source_reference": "Interação direta no chatbook",
+    "confidence": 1,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286379902_uesj2",
+    "created_at": "2026-10-29T15:06:19.902Z",
+    "updated_at": "2026-10-29T15:06:19.902Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "Prefiro funções utilitárias exportadas com nomes camelCase e JSDoc em português.",
+        "updated_at": "2026-10-29T15:06:19.902Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "shared",
+    "owner_id": "agent_08",
+    "agent_id": "08",
+    "project_id": "devforge-default",
+    "type": "lesson",
+    "content": "[Lição Reutilizável]: Sempre indexar chaves estrangeiras em consultas de alto volume. | Contexto: Timeout em queries não indexadas -> Solução: Adição de index no schema",
+    "source_type": "observation",
+    "source_reference": "Execution event from agent 08",
+    "confidence": 0.95,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": true,
+    "memory_id": "mem_1793286379904_4acrw",
+    "created_at": "2026-10-29T15:06:19.904Z",
+    "updated_at": "2026-10-29T15:06:19.904Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "[Lição Reutilizável]: Sempre indexar chaves estrangeiras em consultas de alto volume. | Contexto: Timeout em queries não indexadas -> Solução: Adição de index no schema",
+        "updated_at": "2026-10-29T15:06:19.904Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "project",
+    "owner_id": "agent_01",
+    "agent_id": "01",
+    "project_id": "projeto-alpha",
+    "type": "fact",
+    "content": "Configuração confidencial do Projeto Alpha: porta interna 9090 (1793286379906)",
+    "source_type": "observation",
+    "source_reference": "alpha-config",
+    "confidence": 1,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286379906_dn29x",
+    "created_at": "2026-10-29T15:06:19.906Z",
+    "updated_at": "2026-10-29T15:06:19.906Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "Configuração confidencial do Projeto Alpha: porta interna 9090 (1793286379906)",
+        "updated_at": "2026-10-29T15:06:19.906Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "agent",
+    "owner_id": "agent_03",
+    "agent_id": "03",
+    "project_id": null,
+    "type": "skill",
+    "content": "Utilizar rigorosamente contraste 4.5:1 (WCAG AA) para botões.",
+    "source_type": "observation",
+    "source_reference": "ref-1",
+    "confidence": 0.7,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286379907_m7858",
+    "created_at": "2026-10-29T15:06:19.907Z",
+    "updated_at": "2026-10-29T15:06:19.908Z",
+    "version": 2,
+    "history": [
+      {
+        "version": 1,
+        "content": "Utilizar sempre contraste 3:1 para botões secundários.",
+        "updated_at": "2026-10-29T15:06:19.907Z",
+        "reason": "Initial creation"
+      },
+      {
+        "version": 2,
+        "content": "Utilizar rigorosamente contraste 4.5:1 (WCAG AA) para botões.",
+        "updated_at": "2026-10-29T15:06:19.908Z",
+        "reason": "Correção de acessibilidade"
+      }
+    ]
+  },
+  {
+    "scope": "user",
+    "owner_id": "user_master",
+    "agent_id": "00",
+    "project_id": null,
+    "type": "preference",
+    "content": "Prefiro funções utilitárias exportadas com nomes camelCase e JSDoc em português.",
+    "source_type": "user_feedback",
+    "source_reference": "Interação direta no chatbook",
+    "confidence": 1,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286404758_cpj7j",
+    "created_at": "2026-10-29T15:06:44.758Z",
+    "updated_at": "2026-10-29T15:06:44.758Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "Prefiro funções utilitárias exportadas com nomes camelCase e JSDoc em português.",
+        "updated_at": "2026-10-29T15:06:44.758Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "shared",
+    "owner_id": "agent_08",
+    "agent_id": "08",
+    "project_id": "devforge-default",
+    "type": "lesson",
+    "content": "[Lição Reutilizável]: Sempre indexar chaves estrangeiras em consultas de alto volume. | Contexto: Timeout em queries não indexadas -> Solução: Adição de index no schema",
+    "source_type": "observation",
+    "source_reference": "Execution event from agent 08",
+    "confidence": 0.95,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": true,
+    "memory_id": "mem_1793286404762_e1qnf",
+    "created_at": "2026-10-29T15:06:44.762Z",
+    "updated_at": "2026-10-29T15:06:44.762Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "[Lição Reutilizável]: Sempre indexar chaves estrangeiras em consultas de alto volume. | Contexto: Timeout em queries não indexadas -> Solução: Adição de index no schema",
+        "updated_at": "2026-10-29T15:06:44.762Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "project",
+    "owner_id": "agent_01",
+    "agent_id": "01",
+    "project_id": "projeto-alpha",
+    "type": "fact",
+    "content": "Configuração confidencial do Projeto Alpha: porta interna 9090 (1793286404764)",
+    "source_type": "observation",
+    "source_reference": "alpha-config",
+    "confidence": 1,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286404764_obnrw",
+    "created_at": "2026-10-29T15:06:44.764Z",
+    "updated_at": "2026-10-29T15:06:44.764Z",
+    "version": 1,
+    "history": [
+      {
+        "version": 1,
+        "content": "Configuração confidencial do Projeto Alpha: porta interna 9090 (1793286404764)",
+        "updated_at": "2026-10-29T15:06:44.764Z",
+        "reason": "Initial creation"
+      }
+    ]
+  },
+  {
+    "scope": "agent",
+    "owner_id": "agent_03",
+    "agent_id": "03",
+    "project_id": null,
+    "type": "skill",
+    "content": "Utilizar rigorosamente contraste 4.5:1 (WCAG AA) para botões.",
+    "source_type": "observation",
+    "source_reference": "ref-1",
+    "confidence": 0.7,
+    "status": "validated",
+    "expires_at": null,
+    "sensitive": false,
+    "approved_for_sharing": false,
+    "memory_id": "mem_1793286404767_x67n8",
+    "created_at": "2026-10-29T15:06:44.767Z",
+    "updated_at": "2026-10-29T15:06:44.767Z",
+    "version": 2,
+    "history": [
+      {
+        "version": 1,
+        "content": "Utilizar sempre contraste 3:1 para botões secundários.",
+        "updated_at": "2026-10-29T15:06:44.767Z",
+        "reason": "Initial creation"
+      },
+      {
+        "version": 2,
+        "content": "Utilizar rigorosamente contraste 4.5:1 (WCAG AA) para botões.",
+        "updated_at": "2026-10-29T15:06:44.767Z",
+        "reason": "Correção de acessibilidade"
+      }
+    ]
+  }
+]

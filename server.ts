@@ -6,6 +6,12 @@ import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
 import { formatRun } from './src/orchestrator/index.ts';
 import { currentProviderHealth, executeOrchestrator, readHintAgent } from './src/server/executeOrchestrator.ts';
+import { agentRegistry } from './src/core/AgentRegistry.ts';
+import { memoryManager } from './src/core/MemoryManager.ts';
+import { learningManager } from './src/core/LearningManager.ts';
+import { coordinatorService } from './src/core/CoordinatorService.ts';
+import { projectManager } from './src/core/ProjectManager.ts';
+import { cliAdapterManager } from './src/providers/CliAdapterManager.ts';
 
 dotenv.config();
 
@@ -168,7 +174,52 @@ async function startServer() {
     }
   });
 
-  app.get('/api/orchestrator/health', (_req, res) => {
+    // Universal 29 Agents Registry
+  app.get('/api/universal/agents', (_req, res) => {
+    res.json({ agents: agentRegistry.getAllAgents() });
+  });
+
+  // CLIs Discovery & Status
+  app.get('/api/universal/clis', async (_req, res) => {
+    const status = await cliAdapterManager.getVerificationOverview();
+    res.json({ clis: status });
+  });
+
+  // Projects Management
+  app.get('/api/universal/projects', (_req, res) => {
+    res.json({ projects: projectManager.listProjects(), active: projectManager.getActiveProject() });
+  });
+
+  // Memory Management (Query, Update, Delete)
+  app.get('/api/universal/memories', (req, res) => {
+    const scope = req.query.scope ? String(req.query.scope) : undefined;
+    const project_id = req.query.project_id ? String(req.query.project_id) : undefined;
+    const list = memoryManager.query({ scope: scope as any, project_id, approvedOnly: false });
+    res.json({ memories: list });
+  });
+
+  app.post('/api/universal/memories', (req, res) => {
+    const { content, projectId, agentId } = req.body || {};
+    if (!content) { res.status(400).json({ error: 'content required' }); return; }
+    const mem = learningManager.recordUserPreference({ content, projectId, agentId });
+    res.json({ memory: mem });
+  });
+
+  app.delete('/api/universal/memories/:id', (req, res) => {
+    const deleted = memoryManager.deleteMemory(req.params.id);
+    res.json({ success: deleted });
+  });
+
+  // Coordinator Agent 00 Universal Mission Planning
+  app.post('/api/universal/mission', (req, res) => {
+    const input = String(req.body?.input || '').trim();
+    if (!input) { res.status(400).json({ error: 'input required' }); return; }
+    const plan = coordinatorService.planMission(input, req.body?.projectId);
+    const output = coordinatorService.consolidateExecution(plan);
+    res.json({ plan, output });
+  });
+
+app.get('/api/orchestrator/health', (_req, res) => {
     res.json({ agents: currentProviderHealth() });
   });
 
