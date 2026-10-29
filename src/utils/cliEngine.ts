@@ -1,4 +1,7 @@
-export type CliProviderId = 'grok' | 'gemini' | 'codex' | 'gh' | 'system';
+import { AGENT_REGISTRY } from '../orchestrator/registry';
+import type { AgentId } from '../orchestrator/types';
+
+export type CliProviderId = AgentId | 'system';
 
 export interface CliToolConfig {
   id: Exclude<CliProviderId, 'system'>;
@@ -11,6 +14,7 @@ export interface CliToolConfig {
   avgLatencyMs: number;
   commandsExecuted: number;
   defaultModel: string;
+  company: string;
 }
 
 export interface ProjectFile {
@@ -111,56 +115,38 @@ export interface WorkspaceState {
   terminalLogs: TerminalLogEntry[];
 }
 
-export const INITIAL_CLI_TOOLS: CliToolConfig[] = [
-  {
-    id: 'grok',
-    code: '1.1',
-    name: 'Grok CLI',
-    binary: 'grok',
-    version: 'v2.4.1-xai',
-    specialty: 'Diagnóstico rápido de falhas, análise de logs de execução e refatoração de concorrência',
-    status: 'Ready',
-    avgLatencyMs: 320,
-    commandsExecuted: 18,
-    defaultModel: 'grok-3-fast-cli',
-  },
-  {
-    id: 'gemini',
-    code: '1.2',
-    name: 'Gemini CLI',
-    binary: 'gemini',
-    version: 'v3.8.0-google',
-    specialty: 'Arquitetura de contexto amplo, geração automática de documentação JSDoc/MD e revisão profunda',
-    status: 'Ready',
-    avgLatencyMs: 290,
-    commandsExecuted: 34,
-    defaultModel: 'gemini-3.8-flash',
-  },
-  {
-    id: 'codex',
-    code: '1.3',
-    name: 'Codex CLI',
-    binary: 'codex',
-    version: 'v4.2.0-agent',
-    specialty: 'Síntese de código em lote, geração de suítes de testes unitários e patches diretos em AST',
-    status: 'Ready',
-    avgLatencyMs: 350,
-    commandsExecuted: 27,
-    defaultModel: 'codex-agent-v4',
-  },
-  {
-    id: 'gh',
-    code: '1.4',
-    name: 'GitHub CLI',
-    binary: 'gh',
-    version: 'v2.67.0',
-    specialty: 'Automação de Pull Requests, merge seguro, releases, code checks e disparo de workflows CI/CD',
-    status: 'Ready',
-    avgLatencyMs: 140,
-    commandsExecuted: 42,
-    defaultModel: 'gh-api-v4',
-  },
-];
+const TOOL_LATENCY_MS: Record<AgentId, number> = {
+  grok: 320,
+  gemini: 290,
+  codex: 350,
+  claude: 340,
+  gh: 140,
+};
+
+const TOOL_COMMANDS_EXECUTED: Record<AgentId, number> = {
+  grok: 18,
+  gemini: 34,
+  codex: 27,
+  claude: 0,
+  gh: 42,
+};
+
+export const INITIAL_CLI_TOOLS: CliToolConfig[] = AGENT_REGISTRY.map((agent) => ({
+  id: agent.id,
+  code: agent.code,
+  name: agent.name,
+  binary: agent.binary,
+  version: agent.version,
+  specialty: agent.specialty,
+  status: 'Ready',
+  avgLatencyMs: TOOL_LATENCY_MS[agent.id],
+  commandsExecuted: TOOL_COMMANDS_EXECUTED[agent.id],
+  defaultModel: agent.defaultModel,
+  company: agent.companyName,
+}));
+
+export type CliToolStatus = CliToolConfig;
+export type LocalProjectFile = ProjectFile;
 
 export const INITIAL_FILES: ProjectFile[] = [
   {
@@ -556,7 +542,7 @@ export function createInitialWorkspaceState(): WorkspaceState {
         provider: 'system',
         command: 'devforge init --attach-local-workspace',
         output:
-          'Workspace conectado em /workspace/devforge-core · Binários detectados: grok (1.1), gemini (1.2), codex (1.3), gh (1.4).',
+          'Workspace conectado · Plano de controle DevForge sobre xAI (1.1), Google (1.2), OpenAI (1.3), GitHub (1.4) e Anthropic (1.5).',
         exitCode: 0,
       },
       {
@@ -591,10 +577,11 @@ export function parseCliCommand(rawCommand: string): {
   const subcommand = (tokens[1] || '').toLowerCase();
   const args = tokens.slice(2).map((arg) => arg.replace(/^"|"$/g, ''));
 
-  if (binary === 'grok') return { provider: 'grok', binary, subcommand, args };
-  if (binary === 'gemini') return { provider: 'gemini', binary, subcommand, args };
-  if (binary === 'codex') return { provider: 'codex', binary, subcommand, args };
+  if (binary === 'grok' || binary === 'gemini' || binary === 'codex' || binary === 'claude') {
+    return { provider: binary, binary, subcommand, args };
+  }
   if (binary === 'gh' || binary === 'git') return { provider: 'gh', binary, subcommand, args };
+  if (binary === 'devforge') return { provider: 'system', binary, subcommand, args };
   return { provider: 'system', binary, subcommand, args };
 }
 
@@ -917,6 +904,34 @@ export const INITIAL_CHATBOOK_MESSAGES: ChatbookMessage[] = [
 ];
 
 const MASTER_AUTOCOMPLETE_CATALOG: AutocompleteItem[] = [
+  {
+    id: 'ac-devforge-status',
+    command: 'devforge status',
+    provider: 'grok',
+    category: 'Workflow',
+    description: 'Mostra qual empresa está na API e qual está no motor local',
+  },
+  {
+    id: 'ac-devforge-fanout',
+    command: 'devforge fanout auditar tokenGuard, documentar o contrato e preparar o pull request',
+    provider: 'grok',
+    category: 'Workflow',
+    description: 'Fan-out entre xAI, Google e GitHub com handoff',
+  },
+  {
+    id: 'ac-devforge-handoff',
+    command: 'devforge handoff grok claude revisar o achado de clock skew',
+    provider: 'claude',
+    category: 'Workflow',
+    description: 'Entrega o pacote da xAI para a Anthropic revisar o desenho',
+  },
+  {
+    id: 'ac-claude-1',
+    command: 'claude review src/auth/tokenGuard.ts --design',
+    provider: 'claude',
+    category: 'Comando',
+    description: 'Crítica de desenho e trade-offs (Anthropic 1.5)',
+  },
   {
     id: 'ac-grok-1',
     command: 'grok analyze src/auth/tokenGuard.ts --security --race-conditions',

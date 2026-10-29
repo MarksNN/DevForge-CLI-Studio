@@ -25,6 +25,15 @@ interface TerminalHubViewProps {
   activeFile: ProjectFile;
   files: ProjectFile[];
   isExecutingCli: boolean;
+  healthById?: Record<
+    string,
+    {
+      apiConfigured: boolean;
+      execution: 'provider-api' | 'local-engine';
+      model: string;
+      authSource?: 'session' | 'env' | 'none';
+    }
+  >;
   onExecuteCommand: (command: string, forcedProvider?: CliProviderId) => Promise<void>;
   onClearLogs: () => void;
   onSaveWorkspaceSnapshot: () => void;
@@ -66,6 +75,13 @@ const PRESET_COMMANDS: Array<{
     command: 'gh pr list --state open',
     description: 'Lista Pull Requests ativos com status de checks e revisores IA.',
   },
+  {
+    label: 'Fan-out entre empresas (DevForge)',
+    code: '1.0',
+    provider: 'grok',
+    command: 'devforge fanout auditar tokenGuard, documentar o contrato e preparar o pull request',
+    description: 'Encaminha a mesma intenção para xAI, Google e GitHub, com handoff.',
+  },
 ];
 
 export const TerminalHubView: React.FC<TerminalHubViewProps> = ({
@@ -75,6 +91,7 @@ export const TerminalHubView: React.FC<TerminalHubViewProps> = ({
   activeFile,
   files,
   isExecutingCli,
+  healthById,
   onExecuteCommand,
   onClearLogs,
   onSaveWorkspaceSnapshot,
@@ -133,7 +150,7 @@ export const TerminalHubView: React.FC<TerminalHubViewProps> = ({
               Orquestrador Multi-CLI Unificado
             </h1>
             <p className="text-sm text-[#57534E] mt-1">
-              Centralize Grok CLI, Gemini CLI, Codex CLI e GitHub CLI com SVGs oficiais, autocompletar e sugestões em tempo real.
+              Plano de controle entre xAI, Google, OpenAI, Anthropic e GitHub. A política escolhe a empresa; a API responde quando a chave existe.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -169,9 +186,19 @@ export const TerminalHubView: React.FC<TerminalHubViewProps> = ({
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           {cliTools.map((tool) => {
             const isSelected = activeCliBinary === tool.id;
+            const health = healthById?.[tool.id];
+            const connection = !health
+              ? 'verificando'
+              : health.authSource === 'session'
+                ? `sessão Grok · ${health.model}`
+                : health.execution === 'provider-api'
+                  ? `API · ${health.model}`
+                  : health.apiConfigured
+                    ? 'credencial ok · motor local'
+                    : 'motor local';
             const borderAccent =
               tool.id === 'grok'
                 ? 'border-[#E11D74] shadow-xs'
@@ -179,6 +206,8 @@ export const TerminalHubView: React.FC<TerminalHubViewProps> = ({
                 ? 'border-[#0284C7] shadow-xs'
                 : tool.id === 'codex'
                 ? 'border-[#D97706] shadow-xs'
+                : tool.id === 'claude'
+                ? 'border-[#B45309] shadow-xs'
                 : 'border-[#B83314] shadow-xs';
             return (
               <div
@@ -193,12 +222,12 @@ export const TerminalHubView: React.FC<TerminalHubViewProps> = ({
                     <span>{tool.code} · {tool.binary}</span>
                   </span>
                   <span className="text-xs font-mono font-semibold text-[#B45309] tabular-nums">
-                    Ativo · {tool.avgLatencyMs}ms
+                    {connection}
                   </span>
                 </div>
 
                 <h2 className="text-base font-bold text-[#B83314] mt-2.5 flex items-center gap-2">
-                  <span>{tool.name}</span>
+                  <span>{tool.company} · {tool.name}</span>
                 </h2>
 
                 <p className="text-xs text-[#57534E] mt-1.5 leading-relaxed min-h-[3.25rem]">
@@ -240,7 +269,7 @@ export const TerminalHubView: React.FC<TerminalHubViewProps> = ({
             </div>
 
             <div className="flex items-center gap-1 bg-[#FAF8F5] p-1 rounded-lg border border-[#E5E0D8]">
-              {(['all', 'grok', 'gemini', 'codex', 'gh'] as const).map((filterKey) => (
+              {(['all', 'grok', 'gemini', 'codex', 'claude', 'gh'] as const).map((filterKey) => (
                 <button
                   key={filterKey}
                   type="button"
@@ -339,7 +368,7 @@ export const TerminalHubView: React.FC<TerminalHubViewProps> = ({
               value={commandInput}
               onChange={(e) => setCommandInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Digite grok, gemini, codex, gh ou pressione Tab para autocompletar..."
+              placeholder="Digite devforge, grok, gemini, codex, claude, gh ou pressione Tab..."
               className="w-full bg-[#FFFDF9] border border-[#E5E0D8] rounded-lg px-3 py-2 text-xs font-mono text-[#0284C7] placeholder:text-[#78716C] focus:outline-none focus:border-[#0284C7]"
             />
             <button

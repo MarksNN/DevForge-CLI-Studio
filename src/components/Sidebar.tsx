@@ -112,8 +112,8 @@ export const SIDEBAR_ITEM_METADATA: Record<SidebarTabType, SidebarItemMeta> = {
     label: 'Empresas',
     section: 'CORE MODULES',
     workspaceView: 'terminal',
-    description: 'Motores oficiais conectados: xAI (Grok 1.1), Google (Gemini 1.2), OpenAI (Codex 1.3) e GitHub (GH 1.4).',
-    defaultCliCommand: 'gemini status --engines',
+    description: 'xAI (Grok), Google (Gemini), OpenAI (Codex), Anthropic (Claude) e GitHub. O DevForge decide a rota.',
+    defaultCliCommand: 'devforge status',
   },
   activities: {
     id: 'activities',
@@ -626,7 +626,7 @@ export function Sidebar({
           {/* EMPRESAS & MOTORES CLI (SVGs Oficiais 1.1 a 1.4) */}
           <div className="pt-4 border-t border-[#E5E0D8]">
             <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              MOTORES CLI (1.1 – 1.4)
+              MOTORES CLI (1.1 – 1.5)
             </p>
             <div className="space-y-1">
               {cliTools.map((tool) => (

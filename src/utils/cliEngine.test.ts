@@ -30,6 +30,15 @@ test('parseCliCommand routes grok, gemini, codex and gh commands accurately', ()
   assert.equal(ghCmd.provider, 'gh');
   assert.equal(ghCmd.subcommand, 'pr');
   assert.deepEqual(ghCmd.args, ['create', '--title', 'feat: new cli']);
+
+  const claudeCmd = parseCliCommand('claude review src/auth/tokenGuard.ts --design');
+  assert.equal(claudeCmd.provider, 'claude');
+  assert.equal(claudeCmd.subcommand, 'review');
+
+  const forgeCmd = parseCliCommand('devforge fanout auditar token');
+  assert.equal(forgeCmd.provider, 'system');
+  assert.equal(forgeCmd.binary, 'devforge');
+  assert.equal(forgeCmd.subcommand, 'fanout');
 });
 
 test('applyDependencyToPackageJson adds dependencies and preserves valid JSON', () => {

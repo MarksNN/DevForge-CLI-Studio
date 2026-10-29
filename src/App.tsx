@@ -20,6 +20,7 @@ import {
   DevTask,
   WorkspaceState,
 } from './utils/cliEngine';
+import { buildOrchestratorPlan, executePlanLocally } from './orchestrator';
 import { TerminalHubView } from './components/TerminalHubView';
 import { LocalEditorView } from './components/LocalEditorView';
 import { GitGithubView } from './components/GitGithubView';
@@ -44,18 +45,33 @@ function formatCurrentTime(): string {
 }
 
 function loadPersistedWorkspace(): WorkspaceState {
+  const fresh = createInitialWorkspaceState();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(raw) as WorkspaceState;
       if (parsed && Array.isArray(parsed.files) && Array.isArray(parsed.cliTools)) {
-        return parsed;
+        const savedById = new Map(parsed.cliTools.map((tool) => [tool.id, tool]));
+        return {
+          ...fresh,
+          ...parsed,
+          cliTools: fresh.cliTools.map((tool) => {
+            const saved = savedById.get(tool.id);
+            if (!saved) return tool;
+            return {
+              ...tool,
+              commandsExecuted: saved.commandsExecuted ?? tool.commandsExecuted,
+              status: saved.status ?? tool.status,
+              avgLatencyMs: saved.avgLatencyMs ?? tool.avgLatencyMs,
+            };
+          }),
+        };
       }
     }
   } catch {
     // Ignore storage errors
   }
-  return createInitialWorkspaceState();
+  return fresh;
 }
 
 function loadPersistedChatbook(): ChatbookMessage[] {
@@ -87,6 +103,15 @@ export default function App() {
   const [lastSavedAt, setLastSavedAt] = useState<string>('10:00:00');
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [isExecutingCli, setIsExecutingCli] = useState(false);
+  const [agentHealth, setAgentHealth] = useState<
+    Array<{
+      id: string;
+      apiConfigured: boolean;
+      execution: 'provider-api' | 'local-engine';
+      model: string;
+      authSource?: 'session' | 'env' | 'none';
+    }>
+  >([]);
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [isRunningPipeline, setIsRunningPipeline] = useState(false);
 
@@ -105,6 +130,21 @@ export default function App() {
       // Ignore quota errors
     }
   }, [chatbookMessages]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/orchestrator/health')
+      .then((response) => response.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data.agents)) setAgentHealth(data.agents);
+      })
+      .catch(() => {
+        // O motor local segue disponível sem o servidor.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const activeFile =
     workspace.files.find((f) => f.path === activeFilePath) || workspace.files[0];
@@ -322,12 +362,71 @@ export default function App() {
     });
   };
 
+  const runOrchestrator = async (rawCommand: string, hintAgent?: Exclude<CliProviderId, 'system'>) => {
+    setIsExecutingCli(true);
+    try {
+      const response = await fetch('/api/orchestrator/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: rawCommand,
+          hintAgent,
+          activeFilePath: activeFile.path,
+          activeFileContent: activeFile.content,
+          branch: workspace.activeBranch,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Falha do orquestrador');
+      }
+      const results = Array.isArray(data.results) ? data.results : [];
+      if (results.length === 0) {
+        appendTerminalLog('system', rawCommand, data.synthesis || data.output || 'Sem saída.');
+        return;
+      }
+      for (const result of results) {
+        appendTerminalLog(
+          result.agent,
+          result.command,
+          `[${result.transport}]\n${result.output}`,
+          result.exitCode ?? 0
+        );
+      }
+      if (data.synthesis) appendTerminalLog('system', rawCommand, data.synthesis);
+    } catch (error) {
+      const plan = buildOrchestratorPlan(rawCommand, {
+        activeFilePath: activeFile.path,
+        branch: workspace.activeBranch,
+        hintAgent,
+      });
+      const local = executePlanLocally(plan, {
+        activeFilePath: activeFile.path,
+        activeFileContent: activeFile.content,
+        branch: workspace.activeBranch,
+        health: [],
+      });
+      appendTerminalLog(
+        'system',
+        rawCommand,
+        `${local.synthesis}\n\n${local.results.map((item) => item.output).join('\n\n')}\n\nServidor indisponível (${error instanceof Error ? error.message : 'erro'}).`
+      );
+    } finally {
+      setIsExecutingCli(false);
+    }
+  };
+
   const handleExecuteCommand = async (
     rawCommand: string,
     forcedProvider?: CliProviderId
   ) => {
     const parsed = parseCliCommand(rawCommand);
-    const provider = forcedProvider || parsed.provider;
+    const provider = forcedProvider && forcedProvider !== 'system' ? forcedProvider : parsed.provider;
+
+    if (parsed.binary === 'devforge') {
+      await runOrchestrator(rawCommand);
+      return;
+    }
 
     if (
       parsed.binary === 'npm' &&
@@ -392,38 +491,8 @@ export default function App() {
       return;
     }
 
-    setIsExecutingCli(true);
-    try {
-      const response = await fetch('/api/ai/cli', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          command: rawCommand,
-          provider,
-          activeFilePath: activeFile.path,
-          activeFileContent: activeFile.content,
-          branch: workspace.activeBranch,
-        }),
-      });
-      const data = await response.json();
-      if (!data.usedFallback && data.output) {
-        appendTerminalLog(provider, rawCommand, data.output);
-      } else {
-        appendTerminalLog(
-          provider,
-          rawCommand,
-          `[${provider.toUpperCase()} CLI] Comando "${rawCommand}" executado na branch ${workspace.activeBranch} (foco: ${activeFile.path}). Status: OK.`
-        );
-      }
-    } catch {
-      appendTerminalLog(
-        provider,
-        rawCommand,
-        `[${provider.toUpperCase()} CLI] Execução local concluída para "${rawCommand}".`
-      );
-    } finally {
-      setIsExecutingCli(false);
-    }
+    const hint = provider === 'system' ? undefined : provider;
+    await runOrchestrator(rawCommand, hint);
   };
 
   const handleQuickCliSubmit = async (e: React.FormEvent) => {
@@ -448,38 +517,59 @@ export default function App() {
       saved: false,
     };
 
-    const replySnippetMap: Record<Exclude<CliProviderId, 'system'>, string> = {
-      grok: `// Patch de Segurança Grok CLI 1.1\nexport const MAX_CLOCK_SKEW_MS = 5000;`,
-      gemini: `/**\n * Documentado automaticamente por Gemini CLI 1.2\n * Arquivo alvo: ${activeFile.path}\n */`,
-      codex: `// Asserção gerada por Codex CLI 1.3\nassert.equal(typeof processOrderBatch, 'function');`,
-      gh: `# Workflow GitHub CLI 1.4\ngh pr create --base main --head ${workspace.activeBranch} --fill`,
-    };
+    setChatbookMessages((prev) => [userEntry, ...prev]);
 
-    const replyCmdMap: Record<Exclude<CliProviderId, 'system'>, string> = {
-      grok: `grok analyze ${activeFile.path} --security`,
-      gemini: `gemini docs ${activeFile.path} --write-jsdoc`,
-      codex: `codex test ${activeFile.path} --coverage`,
-      gh: `gh pr list --state open`,
-    };
+    let content = '';
+    let suggestedCommand = `${agent} ask --file ${activeFile.path}`;
+    let codeSnippet: string | undefined;
+    try {
+      const response = await fetch('/api/orchestrator/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: promptText,
+          hintAgent: agent,
+          activeFilePath: activeFile.path,
+          activeFileContent: activeFile.content,
+          branch: workspace.activeBranch,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Falha do orquestrador');
+      content = data.output || data.synthesis || 'Sem saída.';
+      suggestedCommand = data.plan?.steps?.[0]?.command || suggestedCommand;
+      const fenced = String(data.results?.[0]?.output || '').match(/```(?:[a-z]+)?\n([\s\S]*?)```/);
+      codeSnippet = fenced?.[1]?.trim();
+    } catch (error) {
+      const plan = buildOrchestratorPlan(promptText, {
+        hintAgent: agent,
+        activeFilePath: activeFile.path,
+        branch: workspace.activeBranch,
+      });
+      const local = executePlanLocally(plan, {
+        activeFilePath: activeFile.path,
+        activeFileContent: activeFile.content,
+        branch: workspace.activeBranch,
+        health: [],
+      });
+      content = `${local.synthesis}\n\n${local.results.map((item) => item.output).join('\n\n')}\n\nServidor indisponível (${error instanceof Error ? error.message : 'erro'}).`;
+      suggestedCommand = plan.steps[0]?.command || suggestedCommand;
+    }
 
     const assistantEntry: ChatbookMessage = {
       id: `cb-ai-${Date.now() + 1}`,
       agent,
       role: 'assistant',
-      title: `Resposta ${agent.toUpperCase()} CLI · Foco: ${activeFile.name}`,
-      content: `Análise concluída para "${promptText}" na branch ${workspace.activeBranch}. Abaixo está o trecho recomendado pronto para inserção no editor ou execução no terminal.`,
-      codeSnippet: replySnippetMap[agent],
-      suggestedCommand: replyCmdMap[agent],
+      title: `Resposta ${agent.toUpperCase()} · Foco: ${activeFile.name}`,
+      content,
+      codeSnippet,
+      suggestedCommand,
       timestamp: formatCurrentTime().slice(0, 5),
       saved: true,
     };
 
-    setChatbookMessages((prev) => [assistantEntry, userEntry, ...prev]);
-    appendTerminalLog(
-      agent,
-      `chatbook ask --agent ${agent} "${promptText}"`,
-      assistantEntry.content
-    );
+    setChatbookMessages((prev) => [assistantEntry, userEntry, ...prev.filter((item) => item.id !== userEntry.id)]);
+    appendTerminalLog(agent, `devforge run --agent ${agent}`, content);
   };
 
   const handleToggleSaveChatbookMessage = (msgId: string) => {
@@ -868,7 +958,7 @@ export default function App() {
             value={quickCliInput}
             onChange={(e) => setQuickCliInput(e.target.value)}
             aria-label="Comando rápido com autocompletar"
-            placeholder="Autocompletar rápido: digite grok, gemini, codex ou gh..."
+            placeholder="Autocompletar: devforge, grok, gemini, codex, claude ou gh..."
             className="w-full bg-[#FFFDF9] border border-[#E5E0D8] rounded-lg px-3 py-1.5 text-xs font-mono text-[#0284C7] placeholder:text-[#78716C] focus:outline-none focus:border-[#0284C7]"
           />
           <button
@@ -999,6 +1089,7 @@ export default function App() {
               activeFile={activeFile}
               files={workspace.files}
               isExecutingCli={isExecutingCli}
+              healthById={Object.fromEntries(agentHealth.map((item) => [item.id, item]))}
               onExecuteCommand={handleExecuteCommand}
               onClearLogs={() =>
                 setWorkspace((prev) => ({ ...prev, terminalLogs: [] }))

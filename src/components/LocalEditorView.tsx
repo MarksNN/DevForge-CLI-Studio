@@ -15,6 +15,7 @@ import {
 import {
   ProjectFile,
   CodeReviewIssue,
+  CliProviderId,
   analyzeCodeLocally,
   injectJsDocHeaders,
   computeLineDiff,
@@ -29,12 +30,12 @@ interface LocalEditorViewProps {
   onCreateNewFile: (path: string, content: string) => void;
   onInstallDependency: (pkgSpec: string, isDev: boolean) => void;
   onAppendToReadme: (markdownBlock: string) => void;
-  onLogTerminal: (provider: 'grok' | 'gemini' | 'codex' | 'gh' | 'system', cmd: string, output: string) => void;
+  onLogTerminal: (provider: CliProviderId, cmd: string, output: string) => void;
 }
 
 const CODE_SNIPPET_SUGGESTIONS: Array<{
   label: string;
-  provider: 'grok' | 'gemini' | 'codex' | 'gh';
+  provider: Exclude<CliProviderId, 'system'>;
   snippet: string;
 }> = [
   {

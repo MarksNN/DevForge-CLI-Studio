@@ -89,6 +89,27 @@ export const CompanyLogoSvg: React.FC<BrandLogoProps> = ({
     );
   }
 
+  if (provider === 'claude') {
+    return (
+      <svg
+        data-company-logo="claude"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-label="Anthropic Claude Logo"
+        className={className}
+      >
+        <path
+          d="M12 3.2L13.7 8.6L19.2 9.2L15.1 12.8L16.4 18.2L12 15.4L7.6 18.2L8.9 12.8L4.8 9.2L10.3 8.6L12 3.2Z"
+          stroke="#B45309"
+          strokeWidth="1.7"
+          fill="rgba(180, 83, 9, 0.14)"
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="12" r="1.7" fill="#0284C7" />
+      </svg>
+    );
+  }
+
   if (provider === 'gh') {
     return (
       <svg

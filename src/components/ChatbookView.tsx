@@ -52,6 +52,11 @@ const CHATBOOK_SUGGESTIONS: Array<{
     prompt: 'Gere testes unitários node:test cobrindo descontos e erros em src/core/orderProcessor.ts.',
   },
   {
+    agent: 'claude',
+    label: 'Revisar trade-offs de desenho (Claude 1.5)',
+    prompt: 'Faça a crítica de desenho do tokenGuard e diga o que a xAI deve corrigir antes do handoff.',
+  },
+  {
     agent: 'gh',
     label: 'Preparar checklist de Pull Request e release canary (GitHub 1.4)',
     prompt: 'Monte o comando gh pr create e valide o workflow de deploy para a branch atual.',
@@ -106,7 +111,7 @@ export const ChatbookView: React.FC<ChatbookViewProps> = ({
             <span>Chatbook Interativo Multi-CLI & Notebook IA</span>
           </h1>
           <p className="text-sm text-[#57534E] mt-1">
-            Converse com Grok, Gemini, Codex e GitHub CLI, salve células executáveis, use autocompletar e envie patches ao editor.
+            Fale com xAI, Google, OpenAI, Anthropic ou GitHub. O DevForge guarda a rota e o handoff no terminal.
           </p>
         </div>
 
@@ -164,8 +169,9 @@ export const ChatbookView: React.FC<ChatbookViewProps> = ({
                 [
                   { id: 'grok', label: '1.1 Grok CLI' },
                   { id: 'gemini', label: '1.2 Gemini CLI' },
-                  { id: 'codex', label: '1.3 Codex CLI' },
-                  { id: 'gh', label: '1.4 GitHub CLI' },
+                  { id: 'codex', label: '1.3 Codex' },
+                  { id: 'claude', label: '1.5 Claude' },
+                  { id: 'gh', label: '1.4 GitHub' },
                 ] as const
               ).map((ag) => (
                 <button
@@ -217,7 +223,7 @@ export const ChatbookView: React.FC<ChatbookViewProps> = ({
                   </button>
                 </div>
 
-                <p className="text-xs text-[#0284C7] leading-relaxed">
+                <p className="text-xs text-[#0284C7] leading-relaxed whitespace-pre-wrap">
                   {msg.content}
                 </p>
 
@@ -284,7 +290,7 @@ export const ChatbookView: React.FC<ChatbookViewProps> = ({
                 value={promptInput}
                 onChange={(e) => setPromptInput(e.target.value)}
                 aria-label="Mensagem ou comando para o Chatbook"
-                placeholder="Pergunte ao agente IA ou digite grok / gemini / codex / gh para autocompletar..."
+                placeholder="Pergunte ao agente ou digite devforge / grok / gemini / codex / claude / gh..."
                 className="w-full bg-[#FFFDF9] border border-[#E5E0D8] rounded-lg px-3.5 py-2 text-xs font-mono text-[#0284C7] placeholder:text-[#78716C] focus:outline-none focus:border-[#0284C7]"
               />
               <button

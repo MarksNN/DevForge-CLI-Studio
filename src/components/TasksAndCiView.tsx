@@ -85,6 +85,7 @@ export const TasksAndCiView: React.FC<TasksAndCiViewProps> = ({
       grok: `grok analyze ${newTaskFile} --security`,
       gemini: `gemini docs ${newTaskFile} --write-jsdoc`,
       codex: `codex test ${newTaskFile} --coverage`,
+      claude: `claude review ${newTaskFile} --design`,
       gh: `gh pr create --fill`,
     };
     onAddTask(
@@ -155,7 +156,7 @@ export const TasksAndCiView: React.FC<TasksAndCiViewProps> = ({
               <span>Fila de Tarefas de Engenharia via CLI</span>
             </h2>
             <p className="text-xs text-[#57534E] mt-0.5">
-              Cada tarefa possui um comando automatizado atribuído ao Grok CLI, Gemini CLI, Codex CLI ou GitHub CLI.
+              Cada tarefa aponta para xAI, Google, OpenAI, Anthropic ou GitHub.
             </p>
           </div>
 
@@ -230,7 +231,8 @@ export const TasksAndCiView: React.FC<TasksAndCiViewProps> = ({
             >
               <option value="grok">1.1 Grok CLI</option>
               <option value="gemini">1.2 Gemini CLI</option>
-              <option value="codex">1.3 Codex CLI</option>
+              <option value="codex">1.3 Codex</option>
+              <option value="claude">1.5 Claude</option>
               <option value="gh">1.4 GitHub CLI</option>
             </select>
           </div>
