@@ -27,6 +27,8 @@ import { GitGithubView } from './components/GitGithubView';
 import { TasksAndCiView } from './components/TasksAndCiView';
 import { ChatbookView } from './components/ChatbookView';
 import { CompanyLogoSvg } from './components/CompanyLogos';
+import { GlobalSearchBar } from './components/GlobalSearchBar';
+import { CliExecutionProgressBar } from './components/CliExecutionProgressBar';
 import {
   Sidebar,
   SidebarTabType,
@@ -95,14 +97,17 @@ export default function App() {
     loadPersistedChatbook()
   );
   const [activeTab, setActiveTab] = useState<ActiveWorkspaceTab>('terminal');
-  const [activeSidebarTab, setActiveSidebarTab] = useState<SidebarTabType>('dashboard');
-  const [activeBrand, setActiveBrand] = useState<OperationBrand>('atlasgr');
+  const [activeSidebarTab, setActiveSidebarTab] = useState<SidebarTabType>('terminal');
+  const [activeBrand, setActiveBrand] = useState<OperationBrand>('devforge');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeFilePath, setActiveFilePath] = useState<string>('src/core/orderProcessor.ts');
   const [quickCliInput, setQuickCliInput] = useState<string>('');
   const [lastSavedAt, setLastSavedAt] = useState<string>('10:00:00');
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [isExecutingCli, setIsExecutingCli] = useState(false);
+  const [executionProgressPct, setExecutionProgressPct] = useState<number>(0);
+  const [activeCliProvider, setActiveCliProvider] = useState<CliProviderId>('gemini');
+  const [activeCliCommand, setActiveCliCommand] = useState<string>('');
   const [agentHealth, setAgentHealth] = useState<
     Array<{
       id: string;
@@ -149,7 +154,7 @@ export default function App() {
   const activeFile =
     workspace.files.find((f) => f.path === activeFilePath) || workspace.files[0];
 
-  const currentModuleMeta = SIDEBAR_ITEM_METADATA[activeSidebarTab];
+  const currentModuleMeta = SIDEBAR_ITEM_METADATA[activeSidebarTab] || SIDEBAR_ITEM_METADATA.terminal;
 
   const quickAutocompleteList = getCliAutocompleteSuggestions(
     quickCliInput,
@@ -160,10 +165,10 @@ export default function App() {
   const handleSelectTopView = (view: ActiveWorkspaceTab) => {
     setActiveTab(view);
     const defaultSidebarMap: Record<ActiveWorkspaceTab, SidebarTabType> = {
-      terminal: 'dashboard',
+      terminal: 'terminal',
       editor: 'editor',
-      github: 'crm',
-      tasks: 'activities',
+      github: 'github',
+      tasks: 'tasks',
       chatbook: 'chatbook',
     };
     setActiveSidebarTab(defaultSidebarMap[view]);
@@ -186,7 +191,7 @@ export default function App() {
       // Ignore quota errors
     }
     setLastSavedAt(timeStr);
-    setSaveToast(`Workspace, arquivos locais e Chatbook salvos às ${timeStr}.`);
+    setSaveToast(`Workspace, arquivos locais e Notebook IA salvos às ${timeStr}.`);
   };
 
   const appendTerminalLog = (
@@ -216,24 +221,12 @@ export default function App() {
     }));
   };
 
-  const handleExportExtractorReport = () => {
-    const timeStr = formatCurrentTime();
-    appendTerminalLog(
-      'gh',
-      'gh api /repos/devforge/core-engine/releases --export bitrix24-snapshot.json',
-      `[Extrator Bitrix24 & CLI] Snapshot exportado às ${timeStr} (${workspace.files.length} arquivos, ${workspace.tasks.length} tarefas, ${workspace.pullRequests.length} PRs).`
-    );
-    setSaveToast(
-      `Extrator Bitrix24 & CLI: Relatório JSON sincronizado e salvo no workspace às ${timeStr}.`
-    );
-  };
-
   const handleResetWorkspace = () => {
     const fresh = createInitialWorkspaceState();
     setWorkspace(fresh);
     setChatbookMessages(INITIAL_CHATBOOK_MESSAGES.map((m) => ({ ...m })));
     setActiveFilePath('src/core/orderProcessor.ts');
-    setActiveSidebarTab('dashboard');
+    setActiveSidebarTab('terminal');
     setActiveTab('terminal');
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -362,8 +355,30 @@ export default function App() {
     });
   };
 
-  const runOrchestrator = async (rawCommand: string, hintAgent?: Exclude<CliProviderId, 'system'>) => {
+  const runWithVisualProgress = async (
+    rawCommand: string,
+    provider: CliProviderId,
+    action: () => Promise<void> | void
+  ) => {
+    setActiveCliProvider(provider);
+    setActiveCliCommand(rawCommand);
     setIsExecutingCli(true);
+    setExecutionProgressPct(18);
+    await new Promise((r) => setTimeout(r, 85));
+    setExecutionProgressPct(52);
+    await new Promise((r) => setTimeout(r, 85));
+    setExecutionProgressPct(84);
+    try {
+      await action();
+      setExecutionProgressPct(100);
+      await new Promise((r) => setTimeout(r, 180));
+    } finally {
+      setIsExecutingCli(false);
+      setExecutionProgressPct(0);
+    }
+  };
+
+  const runOrchestrator = async (rawCommand: string, hintAgent?: Exclude<CliProviderId, 'system'>) => {
     try {
       const response = await fetch('/api/orchestrator/run', {
         method: 'POST',
@@ -411,8 +426,6 @@ export default function App() {
         rawCommand,
         `${local.synthesis}\n\n${local.results.map((item) => item.output).join('\n\n')}\n\nServidor indisponível (${error instanceof Error ? error.message : 'erro'}).`
       );
-    } finally {
-      setIsExecutingCli(false);
     }
   };
 
@@ -423,76 +436,78 @@ export default function App() {
     const parsed = parseCliCommand(rawCommand);
     const provider = forcedProvider && forcedProvider !== 'system' ? forcedProvider : parsed.provider;
 
-    if (parsed.binary === 'devforge') {
-      await runOrchestrator(rawCommand);
-      return;
-    }
+    await runWithVisualProgress(rawCommand, provider, async () => {
+      if (parsed.binary === 'devforge') {
+        await runOrchestrator(rawCommand);
+        return;
+      }
 
-    if (
-      parsed.binary === 'npm' &&
-      (parsed.subcommand === 'i' || parsed.subcommand === 'install')
-    ) {
-      const pkgArg = parsed.args.find((a) => !a.startsWith('-')) || 'axios';
-      const isDev = parsed.args.includes('-D') || parsed.args.includes('--save-dev');
-      handleInstallDependency(pkgArg, isDev);
-      return;
-    }
+      if (
+        parsed.binary === 'npm' &&
+        (parsed.subcommand === 'i' || parsed.subcommand === 'install')
+      ) {
+        const pkgArg = parsed.args.find((a) => !a.startsWith('-')) || 'axios';
+        const isDev = parsed.args.includes('-D') || parsed.args.includes('--save-dev');
+        handleInstallDependency(pkgArg, isDev);
+        return;
+      }
 
-    if (provider === 'gemini' && parsed.subcommand === 'docs') {
-      const targetPath =
-        parsed.args.find((a) => !a.startsWith('-')) || activeFile.path;
-      const targetFile =
-        workspace.files.find((f) => f.path === targetPath) || activeFile;
-      const docResult = injectJsDocHeaders(targetFile.content, targetFile.path);
-      handleSaveFileContent(targetFile.path, docResult.documentedCode);
-      appendTerminalLog(
-        'gemini',
-        rawCommand,
-        `[Gemini CLI 1.2] Documentação JSDoc injetada em ${targetFile.path} (${docResult.functionsDocumented} funções atualizadas).`
-      );
-      return;
-    }
+      if (provider === 'gemini' && parsed.subcommand === 'docs') {
+        const targetPath =
+          parsed.args.find((a) => !a.startsWith('-')) || activeFile.path;
+        const targetFile =
+          workspace.files.find((f) => f.path === targetPath) || activeFile;
+        const docResult = injectJsDocHeaders(targetFile.content, targetFile.path);
+        handleSaveFileContent(targetFile.path, docResult.documentedCode);
+        appendTerminalLog(
+          'gemini',
+          rawCommand,
+          `[Gemini CLI 1.2] Documentação JSDoc injetada em ${targetFile.path} (${docResult.functionsDocumented} funções atualizadas).`
+        );
+        return;
+      }
 
-    if (provider === 'gh' && parsed.subcommand === 'pr' && parsed.args[0] === 'list') {
-      const openPrs = workspace.pullRequests
-        .filter((p) => p.status === 'Open')
-        .map(
-          (p) =>
-            `#${p.number}  ${p.title}  [${p.sourceBranch} -> ${p.targetBranch}] (${p.checks})`
-        )
-        .join('\n');
-      appendTerminalLog(
-        'gh',
-        rawCommand,
-        openPrs || 'Nenhum Pull Request aberto no momento.'
-      );
-      return;
-    }
+      if (provider === 'gh' && parsed.subcommand === 'pr' && parsed.args[0] === 'list') {
+        const openPrs = workspace.pullRequests
+          .filter((p) => p.status === 'Open')
+          .map(
+            (p) =>
+              `#${p.number}  ${p.title}  [${p.sourceBranch} -> ${p.targetBranch}] (${p.checks})`
+          )
+          .join('\n');
+        appendTerminalLog(
+          'gh',
+          rawCommand,
+          openPrs || 'Nenhum Pull Request aberto no momento.'
+        );
+        return;
+      }
 
-    if (provider === 'grok' && parsed.subcommand === 'analyze') {
-      const targetPath =
-        parsed.args.find((a) => !a.startsWith('-')) || activeFile.path;
-      const targetFile =
-        workspace.files.find((f) => f.path === targetPath) || activeFile;
-      const issues = analyzeCodeLocally(targetFile);
-      const summary = issues
-        .map((iss) => `[${iss.severity}] L${iss.line} (${iss.rule}): ${iss.message}`)
-        .join('\n');
-      appendTerminalLog(
-        'grok',
-        rawCommand,
-        `[Grok CLI 1.1] Diagnóstico para ${targetFile.path}:\n${summary}`
-      );
-      return;
-    }
+      if (provider === 'grok' && parsed.subcommand === 'analyze') {
+        const targetPath =
+          parsed.args.find((a) => !a.startsWith('-')) || activeFile.path;
+        const targetFile =
+          workspace.files.find((f) => f.path === targetPath) || activeFile;
+        const issues = analyzeCodeLocally(targetFile);
+        const summary = issues
+          .map((iss) => `[${iss.severity}] L${iss.line} (${iss.rule}): ${iss.message}`)
+          .join('\n');
+        appendTerminalLog(
+          'grok',
+          rawCommand,
+          `[Grok CLI 1.1] Diagnóstico para ${targetFile.path}:\n${summary}`
+        );
+        return;
+      }
 
-    if (provider === 'codex' && parsed.subcommand === 'test') {
-      handleRunTestSuite();
-      return;
-    }
+      if (provider === 'codex' && parsed.subcommand === 'test') {
+        handleRunTestSuite();
+        return;
+      }
 
-    const hint = provider === 'system' ? undefined : provider;
-    await runOrchestrator(rawCommand, hint);
+      const hint = provider === 'system' ? undefined : provider;
+      await runOrchestrator(rawCommand, hint);
+    });
   };
 
   const handleQuickCliSubmit = async (e: React.FormEvent) => {
@@ -810,7 +825,7 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#0284C7]">
       {/* Top Bar / Sidebar Superior (Modo Light) */}
-      <header className="flex items-center justify-between gap-6 px-6 py-3.5 border-b border-[#E5E0D8] bg-[#FFFDF9] sticky top-0 z-30">
+      <header className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 border-b border-[#E5E0D8] bg-[#FFFDF9] sticky top-0 z-30">
         {/* Zone 1: Mobile Menu Trigger + Single Brand Wordmark */}
         <div className="flex items-center gap-3 shrink-0">
           <button
@@ -833,10 +848,33 @@ export default function App() {
           </a>
         </div>
 
-        {/* Zone 2: 5 concise single-line text navigation links */}
+        {/* Zone 2: Global Search Bar in Top Bar */}
+        <GlobalSearchBar
+          files={workspace.files}
+          tasks={workspace.tasks}
+          terminalLogs={workspace.terminalLogs}
+          onSelectFileResult={(filePath) => {
+            setActiveFilePath(filePath);
+            handleSelectTopView('editor');
+          }}
+          onSelectTaskResult={(_taskId, linkedFile) => {
+            setActiveFilePath(linkedFile);
+            handleSelectTopView('tasks');
+          }}
+          onSelectLogResult={(cmd) => {
+            setQuickCliInput(cmd);
+            handleSelectTopView('terminal');
+          }}
+          onExecuteCommandFromSearch={(cmd, provider) => {
+            handleSelectTopView('terminal');
+            handleExecuteCommand(cmd, provider);
+          }}
+        />
+
+        {/* Zone 3: 5 concise single-line text navigation links */}
         <nav
           aria-label="Sidebar Superior Principal"
-          className="hidden md:flex items-center gap-6 text-sm font-semibold"
+          className="hidden xl:flex items-center gap-5 text-sm font-semibold"
         >
           <a
             href="#terminal"
@@ -850,7 +888,7 @@ export default function App() {
                 : 'text-[#57534E] hover:text-[#0284C7]'
             }`}
           >
-            Painel Central & CLIs
+            Terminal & CLIs
           </a>
           <a
             href="#editor"
@@ -878,7 +916,7 @@ export default function App() {
                 : 'text-[#57534E] hover:text-[#0284C7]'
             }`}
           >
-            Pipeline Git & PRs
+            Git & PRs
           </a>
           <a
             href="#tasks"
@@ -892,7 +930,7 @@ export default function App() {
                 : 'text-[#57534E] hover:text-[#0284C7]'
             }`}
           >
-            Agenda & CI/CD
+            Tarefas & CI/CD
           </a>
           <a
             href="#chatbook"
@@ -906,11 +944,11 @@ export default function App() {
                 : 'text-[#57534E] hover:text-[#E11D74]'
             }`}
           >
-            Chatbook IA
+            Notebook IA
           </a>
         </nav>
 
-        {/* Zone 3: 1 primary action button */}
+        {/* Zone 4: 1 primary action button */}
         <div className="flex items-center shrink-0">
           <button
             type="button"
@@ -978,6 +1016,14 @@ export default function App() {
         </div>
       </div>
 
+      {/* Visual CLI Execution Loading & Progress Bar */}
+      <CliExecutionProgressBar
+        isExecuting={isExecutingCli}
+        progressPct={executionProgressPct}
+        activeProvider={activeCliProvider}
+        activeCommand={activeCliCommand}
+      />
+
       {/* Live Autocomplete Dropdown strip when typing in Top Bar */}
       {quickCliInput.trim().length > 0 && quickAutocompleteList.length > 0 && (
         <div className="px-6 py-2 bg-[#FFFDF9] border-b border-[#D97706]/35 flex flex-wrap items-center gap-2">
@@ -1024,7 +1070,7 @@ export default function App() {
           onSelectTab={handleSelectSidebarTab}
           activeBrand={activeBrand}
           onToggleBrand={() =>
-            setActiveBrand((prev) => (prev === 'atlasgr' ? 'totaltrack' : 'atlasgr'))
+            setActiveBrand((prev) => (prev === 'devforge' ? 'multicli' : 'devforge'))
           }
           cliTools={workspace.cliTools}
           files={workspace.files}
@@ -1032,7 +1078,6 @@ export default function App() {
           onSelectFile={(path) => setActiveFilePath(path)}
           onSaveWorkspace={handleGlobalSaveWorkspace}
           onResetWorkspace={handleResetWorkspace}
-          onExportExtractorReport={handleExportExtractorReport}
           mobileOpen={mobileSidebarOpen}
           onCloseMobile={() => setMobileSidebarOpen(false)}
         />
@@ -1048,7 +1093,7 @@ export default function App() {
                 </span>
                 <span className="text-[#78716C]">•</span>
                 <span className="text-[#B45309] font-semibold">
-                  Operação: {activeBrand === 'atlasgr' ? 'AtlasGR' : 'Total Trac'}
+                  Operação: {activeBrand === 'devforge' ? 'DevForge Core' : 'Multi-CLI Engine'}
                 </span>
                 <span className="text-[#78716C]">•</span>
                 <span className="text-[#0284C7] font-semibold">
@@ -1089,6 +1134,8 @@ export default function App() {
               activeFile={activeFile}
               files={workspace.files}
               isExecutingCli={isExecutingCli}
+              executionProgressPct={executionProgressPct}
+              activeCliCommand={activeCliCommand}
               healthById={Object.fromEntries(agentHealth.map((item) => [item.id, item]))}
               onExecuteCommand={handleExecuteCommand}
               onClearLogs={() =>

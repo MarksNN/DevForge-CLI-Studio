@@ -1,32 +1,13 @@
 import React from 'react';
 import {
-  Home,
-  LayoutTemplate,
-  Search,
-  Users,
-  Building2,
-  Activity,
-  BookOpen,
-  Layers,
-  FileBarChart,
-  Zap,
-  ChevronRight,
-  Database,
-  BarChart3,
-  CalendarDays,
-  Bell,
-  Cpu,
-  Wallet,
-  FileText,
-  PhoneCall,
-  Target,
-  Shield,
+  Terminal,
+  Code2,
+  GitBranch,
+  CheckSquare,
   MessageSquare,
+  ChevronRight,
   UserCog,
-  Plug,
   Settings as SettingsIcon,
-  Download,
-  LineChart,
   Save,
   RotateCcw,
   FileCode,
@@ -35,249 +16,74 @@ import { CompanyLogoSvg } from './CompanyLogos';
 import { CliToolStatus, LocalProjectFile } from '../utils/cliEngine';
 
 export type SidebarTabType =
-  | 'dashboard'
-  | 'prospect'
-  | 'crm'
-  | 'contacts'
-  | 'companies'
-  | 'activities'
-  | 'analytics'
-  | 'winloss'
-  | 'calendar'
-  | 'notifications'
-  | 'commercial_intelligence'
-  | 'roleplay'
-  | 'qualification_matrix'
-  | 'objections_matrix'
-  | 'chatbook'
-  | 'intelligence'
-  | 'market-intelligence'
-  | 'topic_training'
-  | 'bitrix'
-  | 'integrations'
-  | 'reports'
-  | 'knowledge'
+  | 'terminal'
   | 'editor'
-  | 'automations'
-  | 'usage'
+  | 'github'
+  | 'tasks'
+  | 'chatbook'
   | 'team'
   | 'settings';
 
-export type OperationBrand = 'atlasgr' | 'totaltrack';
+export type OperationBrand = 'devforge' | 'multicli';
 
 export interface SidebarItemMeta {
   id: SidebarTabType;
   label: string;
-  section: 'CORE MODULES' | 'EXECUTIVO' | 'INTELIGÊNCIA' | 'ADMINISTRAÇÃO';
+  section: 'MÓDULOS DE ENGENHARIA' | 'ADMINISTRAÇÃO';
   workspaceView: 'terminal' | 'editor' | 'github' | 'tasks' | 'chatbook';
   description: string;
   defaultCliCommand: string;
 }
 
 export const SIDEBAR_ITEM_METADATA: Record<SidebarTabType, SidebarItemMeta> = {
-  dashboard: {
-    id: 'dashboard',
-    label: 'Painel Central',
-    section: 'CORE MODULES',
+  terminal: {
+    id: 'terminal',
+    label: 'Terminal & CLIs',
+    section: 'MÓDULOS DE ENGENHARIA',
     workspaceView: 'terminal',
-    description: 'Central de comando unificada com Grok CLI 1.1, Gemini CLI 1.2, Codex CLI 1.3 e GitHub CLI 1.4.',
+    description:
+      'Orquestrador unificado com 1.1 Grok CLI, 1.2 Gemini CLI, 1.3 Codex CLI e 1.4 GitHub CLI.',
     defaultCliCommand: 'grok analyze src/core/orderProcessor.ts --security',
-  },
-  prospect: {
-    id: 'prospect',
-    label: 'Prospecção',
-    section: 'CORE MODULES',
-    workspaceView: 'terminal',
-    description: 'Varredura e descoberta de símbolos, gargalos e dependências no repositório local via CLI.',
-    defaultCliCommand: 'gemini search --symbols src/core/orderProcessor.ts',
-  },
-  crm: {
-    id: 'crm',
-    label: 'Pipeline CRM',
-    section: 'CORE MODULES',
-    workspaceView: 'github',
-    description: 'Pipeline completo de branches, commits, revisões de Pull Requests e entregas Git.',
-    defaultCliCommand: 'gh pr list --state open',
-  },
-  contacts: {
-    id: 'contacts',
-    label: 'Decisores',
-    section: 'CORE MODULES',
-    workspaceView: 'github',
-    description: 'Code Owners, aprovadores de Pull Request e agentes revisores de código.',
-    defaultCliCommand: 'gh pr status',
-  },
-  companies: {
-    id: 'companies',
-    label: 'Empresas',
-    section: 'CORE MODULES',
-    workspaceView: 'terminal',
-    description: 'xAI (Grok), Google (Gemini), OpenAI (Codex), Anthropic (Claude) e GitHub. O DevForge decide a rota.',
-    defaultCliCommand: 'devforge status',
-  },
-  activities: {
-    id: 'activities',
-    label: 'Agenda',
-    section: 'CORE MODULES',
-    workspaceView: 'tasks',
-    description: 'Fila de tarefas de desenvolvimento em andamento e automações vinculadas à branch.',
-    defaultCliCommand: 'codex test --coverage',
-  },
-  analytics: {
-    id: 'analytics',
-    label: 'Analytics',
-    section: 'CORE MODULES',
-    workspaceView: 'tasks',
-    description: 'Métricas de cobertura de linhas, tempo de execução de suítes e performance de build.',
-    defaultCliCommand: 'codex coverage --report',
-  },
-  winloss: {
-    id: 'winloss',
-    label: 'Win/Loss',
-    section: 'CORE MODULES',
-    workspaceView: 'tasks',
-    description: 'Taxa de aprovação de builds, testes automatizados (Pass/Fail) e qualidade de entrega.',
-    defaultCliCommand: 'codex test src/core/orderProcessor.ts --coverage',
-  },
-  calendar: {
-    id: 'calendar',
-    label: 'Calendário',
-    section: 'CORE MODULES',
-    workspaceView: 'github',
-    description: 'Cronograma de releases, histórico de commits e janelas de deploy contínuo.',
-    defaultCliCommand: 'gh release list',
-  },
-  notifications: {
-    id: 'notifications',
-    label: 'Notificações',
-    section: 'CORE MODULES',
-    workspaceView: 'terminal',
-    description: 'Logs em tempo real do terminal, alertas de segurança e eventos do pipeline.',
-    defaultCliCommand: 'gh run list --limit 5',
-  },
-  commercial_intelligence: {
-    id: 'commercial_intelligence',
-    label: 'Comercial Inteligente',
-    section: 'EXECUTIVO',
-    workspaceView: 'tasks',
-    description: 'Visão executiva consolidada de produtividade dev, SLA de revisões IA e saúde do CI/CD.',
-    defaultCliCommand: 'gh workflow run ci-pipeline.yml',
-  },
-  roleplay: {
-    id: 'roleplay',
-    label: 'Roleplay',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'chatbook',
-    description: 'Simulação interativa de incidentes, pair programming e defesa de arquitetura com agentes CLI.',
-    defaultCliCommand: 'grok simulate-incident --target src/api/githubWebhook.ts',
-  },
-  qualification_matrix: {
-    id: 'qualification_matrix',
-    label: 'Matriz de Qualificação',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'editor',
-    description: 'Matriz de critérios de qualidade, tipagem estrita e prontidão de código para produção.',
-    defaultCliCommand: 'grok analyze src/core/orderProcessor.ts --security',
-  },
-  objections_matrix: {
-    id: 'objections_matrix',
-    label: 'Matriz de Objeções',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'editor',
-    description: 'Diagnóstico preventivo de vulnerabilidades, race conditions e bloqueios de code review.',
-    defaultCliCommand: 'grok audit src/api/githubWebhook.ts --strict',
-  },
-  chatbook: {
-    id: 'chatbook',
-    label: 'Chatbook',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'chatbook',
-    description: 'Caderno interativo multi-agente com salvamento de prompts, snippets e autocompletar.',
-    defaultCliCommand: 'gemini chatbook --sync',
-  },
-  intelligence: {
-    id: 'intelligence',
-    label: 'Hub de IA',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'terminal',
-    description: 'Orquestração simultânea dos motores Grok 1.1, Gemini 1.2, Codex 1.3 e GitHub CLI 1.4.',
-    defaultCliCommand: 'gemini docs src/core/orderProcessor.ts --write-jsdoc',
-  },
-  'market-intelligence': {
-    id: 'market-intelligence',
-    label: 'Market Intelligence',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'terminal',
-    description: 'Benchmark comparativo de latência, segurança de pacotes npm e versões de dependências.',
-    defaultCliCommand: 'npm install zod',
-  },
-  topic_training: {
-    id: 'topic_training',
-    label: 'Academy',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'chatbook',
-    description: 'Biblioteca de comandos avançados, boas práticas de CLI e receitas de automação.',
-    defaultCliCommand: 'gemini explain src/core/orderProcessor.ts',
-  },
-  bitrix: {
-    id: 'bitrix',
-    label: 'Guia Bitrix24',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'github',
-    description: 'Integração de webhooks corporativos, sincronização de tarefas e gatilhos de PR.',
-    defaultCliCommand: 'gh webhook list',
-  },
-  integrations: {
-    id: 'integrations',
-    label: 'Integrações',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'github',
-    description: 'Conexão direta com GitHub CLI (gh), repositórios remotos, branches e npm registry.',
-    defaultCliCommand: 'gh auth status',
-  },
-  reports: {
-    id: 'reports',
-    label: 'Relatórios IA',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'editor',
-    description: 'Laudos técnicos automatizados de revisão de código e geração de documentação Markdown.',
-    defaultCliCommand: 'gemini docs src/core/orderProcessor.ts --write-jsdoc',
-  },
-  knowledge: {
-    id: 'knowledge',
-    label: 'Base de Conhecimento',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'editor',
-    description: 'Explorador de pastas locais, documentação README.md e árvore de arquivos do projeto.',
-    defaultCliCommand: 'gemini docs README.md --summary',
   },
   editor: {
     id: 'editor',
-    label: 'Editor de Documentos',
-    section: 'INTELIGÊNCIA',
+    label: 'Editor Local & JSDoc',
+    section: 'MÓDULOS DE ENGENHARIA',
     workspaceView: 'editor',
-    description: 'Editor local com diff linha a linha, injeção de JSDoc por IA e instalador de pacotes npm.',
+    description:
+      'Edição de pastas locais, instalação de pacotes npm, diff linha a linha e revisão de código por IA.',
     defaultCliCommand: 'gemini docs src/core/orderProcessor.ts --write-jsdoc',
   },
-  automations: {
-    id: 'automations',
-    label: 'Automações',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'tasks',
-    description: 'Pipelines automatizados de lint, auditoria de segurança, testes unitários e deploy.',
-    defaultCliCommand: 'codex synthesize-test src/core/orderProcessor.ts',
+  github: {
+    id: 'github',
+    label: 'Git, PRs & Merge',
+    section: 'MÓDULOS DE ENGENHARIA',
+    workspaceView: 'github',
+    description:
+      'Controle de branches, stage, commit semântico, push, criação de Pull Requests e merge via gh.',
+    defaultCliCommand: 'gh pr list --state open',
   },
-  usage: {
-    id: 'usage',
-    label: 'Consumo de IA',
-    section: 'INTELIGÊNCIA',
-    workspaceView: 'terminal',
-    description: 'Monitoramento em tempo real de comandos executados e latência em ms de cada CLI.',
-    defaultCliCommand: 'grok metrics --latency',
+  tasks: {
+    id: 'tasks',
+    label: 'Tarefas & CI/CD',
+    section: 'MÓDULOS DE ENGENHARIA',
+    workspaceView: 'tasks',
+    description:
+      'Gerenciamento de tarefas de desenvolvimento, síntese de testes automatizados e pipeline CI/CD.',
+    defaultCliCommand: 'codex test src/core/orderProcessor.ts --coverage',
+  },
+  chatbook: {
+    id: 'chatbook',
+    label: 'Notebook Multi-CLI',
+    section: 'MÓDULOS DE ENGENHARIA',
+    workspaceView: 'chatbook',
+    description:
+      'Caderno interativo multi-agente com salvamento de notas, autocompletar e inserção direta no código.',
+    defaultCliCommand: 'gemini explain src/core/orderProcessor.ts --architecture',
   },
   team: {
     id: 'team',
-    label: 'Equipe',
+    label: 'Equipe & Code Owners',
     section: 'ADMINISTRAÇÃO',
     workspaceView: 'github',
     description: 'Gestão de contribuidores, revisores de PR e permissões de branch.',
@@ -285,7 +91,7 @@ export const SIDEBAR_ITEM_METADATA: Record<SidebarTabType, SidebarItemMeta> = {
   },
   settings: {
     id: 'settings',
-    label: 'Configurações',
+    label: 'Configurações CLI',
     section: 'ADMINISTRAÇÃO',
     workspaceView: 'terminal',
     description: 'Preferências do workspace, persistência local e restauração de estado inicial.',
@@ -304,7 +110,6 @@ interface SidebarProps {
   onSelectFile: (filePath: string) => void;
   onSaveWorkspace: () => void;
   onResetWorkspace: () => void;
-  onExportExtractorReport: () => void;
   /** Controla a visibilidade em telas < lg, onde a Sidebar vira um painel off-canvas. */
   mobileOpen?: boolean;
   /** Chamado ao fechar a navegação mobile (backdrop, Escape ou seleção de item). */
@@ -322,67 +127,33 @@ export function Sidebar({
   onSelectFile,
   onSaveWorkspace,
   onResetWorkspace,
-  onExportExtractorReport,
   mobileOpen = false,
   onCloseMobile,
 }: SidebarProps) {
-  const isAtlas = activeBrand === 'atlasgr';
+  const isDevForgeCore = activeBrand === 'devforge';
 
   const selectTab = (tab: SidebarTabType) => {
     onSelectTab(tab);
     onCloseMobile?.();
   };
 
+  const devModules: { id: SidebarTabType; label: string; icon: React.ReactNode }[] = [
+    { id: 'terminal', label: 'Terminal & CLIs', icon: <Terminal size={20} /> },
+    { id: 'editor', label: 'Editor Local & JSDoc', icon: <Code2 size={20} /> },
+    { id: 'github', label: 'Git, PRs & Merge', icon: <GitBranch size={20} /> },
+    { id: 'tasks', label: 'Tarefas & CI/CD', icon: <CheckSquare size={20} /> },
+    { id: 'chatbook', label: 'Notebook Multi-CLI', icon: <MessageSquare size={20} /> },
+  ];
+
   const adminTools: { id: SidebarTabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'team', label: 'Equipe', icon: <UserCog size={20} /> },
-    { id: 'settings', label: 'Configurações', icon: <SettingsIcon size={20} /> },
+    { id: 'team', label: 'Equipe & Code Owners', icon: <UserCog size={20} /> },
+    { id: 'settings', label: 'Configurações CLI', icon: <SettingsIcon size={20} /> },
   ];
 
-  const coreTools: { id: SidebarTabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'dashboard', label: 'Painel Central', icon: <Home size={20} /> },
-    { id: 'prospect', label: 'Prospecção', icon: <Search size={20} /> },
-    { id: 'crm', label: 'Pipeline CRM', icon: <LayoutTemplate size={20} /> },
-    { id: 'contacts', label: 'Decisores', icon: <Users size={20} /> },
-    { id: 'companies', label: 'Empresas', icon: <Building2 size={20} /> },
-    { id: 'activities', label: 'Agenda', icon: <Activity size={20} /> },
-    { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} /> },
-    { id: 'winloss', label: 'Win/Loss', icon: <Target size={20} /> },
-    { id: 'calendar', label: 'Calendário', icon: <CalendarDays size={20} /> },
-    { id: 'notifications', label: 'Notificações', icon: <Bell size={20} /> },
-  ];
-
-  const executiveTools: { id: SidebarTabType; label: string; icon: React.ReactNode }[] = [
-    {
-      id: 'commercial_intelligence',
-      label: 'Comercial Inteligente',
-      icon: <LineChart size={20} />,
-    },
-  ];
-
-  const aiTools: { id: SidebarTabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'roleplay', label: 'Roleplay', icon: <PhoneCall size={20} /> },
-    { id: 'qualification_matrix', label: 'Matriz de Qualificação', icon: <Target size={20} /> },
-    { id: 'objections_matrix', label: 'Matriz de Objeções', icon: <Shield size={20} /> },
-    { id: 'chatbook', label: 'Chatbook', icon: <MessageSquare size={20} /> },
-    { id: 'intelligence', label: 'Hub de IA', icon: <Zap size={20} /> },
-    { id: 'market-intelligence', label: 'Market Intelligence', icon: <LineChart size={20} /> },
-    { id: 'topic_training', label: 'Academy', icon: <BookOpen size={20} /> },
-    { id: 'bitrix', label: 'Guia Bitrix24', icon: <Layers size={20} /> },
-    { id: 'integrations', label: 'Integrações', icon: <Plug size={20} /> },
-    { id: 'reports', label: 'Relatórios IA', icon: <FileBarChart size={20} /> },
-    { id: 'knowledge', label: 'Base de Conhecimento', icon: <Database size={20} /> },
-    { id: 'editor', label: 'Editor de Documentos', icon: <FileText size={20} /> },
-    { id: 'automations', label: 'Automações', icon: <Cpu size={20} /> },
-    { id: 'usage', label: 'Consumo de IA', icon: <Wallet size={20} /> },
-  ];
-
-  // Estilo Light Mode idêntico à imagem enviada pelo usuário:
-  // Item ativo em pílula rounded-xl vermelha/terracota (#B83314) ou azul (#0284C7) com texto dourado-creme (#FFF4D6, zero branco puro)
-  // Itens inativos em cinza-ardósia (#4A4640) sobre fundo claro (#FAF8F5)
   const getNavButtonClass = (id: SidebarTabType) => {
     const isActive = activeTab === id;
     if (isActive) {
-      return isAtlas
+      return isDevForgeCore
         ? 'bg-[#B83314] text-[#FFF4D6] shadow-md shadow-[#B83314]/25'
         : 'bg-[#0284C7] text-[#FFF4D6] shadow-md shadow-[#0284C7]/25';
     }
@@ -414,11 +185,10 @@ export function Sidebar({
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Context Switcher (Modo Light) */}
+        {/* Context Switcher */}
         <div className="p-4 border-b border-[#E5E0D8]">
-          {/* Logo Principal da Operação */}
           <div className="flex items-center justify-center mb-3">
-            {isAtlas ? (
+            {isDevForgeCore ? (
               <div className="flex items-center gap-2.5 px-2 py-1">
                 <svg
                   viewBox="0 0 32 32"
@@ -436,10 +206,10 @@ export function Sidebar({
                 </svg>
                 <div className="leading-tight">
                   <span className="block text-sm font-black tracking-wider text-[#B45309] font-display">
-                    ATLAS<span className="text-[#B83314]">GR</span>
+                    DEV<span className="text-[#B83314]">FORGE</span>
                   </span>
                   <span className="block text-[10px] font-mono text-[#0284C7]">
-                    DEVFORGE CLI CORE
+                    CLI STUDIO CORE
                   </span>
                 </div>
               </div>
@@ -470,10 +240,10 @@ export function Sidebar({
                 </svg>
                 <div className="leading-tight">
                   <span className="block text-sm font-black tracking-wider text-[#0284C7] font-display">
-                    TOTAL<span className="text-[#B45309]">TRACK</span>
+                    MULTI<span className="text-[#B45309]">CLI</span>
                   </span>
                   <span className="block text-[10px] font-mono text-[#E11D74]">
-                    MULTI-CLI ENGINE
+                    ENGINE STUDIO
                   </span>
                 </div>
               </div>
@@ -486,7 +256,7 @@ export function Sidebar({
             className="w-full p-2 rounded-xl border border-[#E5E0D8] flex items-center justify-between transition-all group bg-[#F3EFE6] hover:bg-[#EAE5D9]"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              {isAtlas ? (
+              {isDevForgeCore ? (
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -517,10 +287,10 @@ export function Sidebar({
                 </p>
                 <p
                   className={`text-sm font-black truncate ${
-                    isAtlas ? 'text-[#B83314]' : 'text-[#0284C7]'
+                    isDevForgeCore ? 'text-[#B83314]' : 'text-[#0284C7]'
                   }`}
                 >
-                  {isAtlas ? 'AtlasGR' : 'Total Trac'}
+                  {isDevForgeCore ? 'DevForge Core' : 'Multi-CLI Engine'}
                 </p>
               </div>
             </div>
@@ -533,15 +303,15 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* Navigation Links (Idêntico ao layout e seções da referência em Light Mode) */}
+        {/* Navigation Links (Estilo limpo em pílula rounded-xl focado nos módulos CLI e Arquivos) */}
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-          {/* CORE MODULES */}
+          {/* MÓDULOS DE ENGENHARIA */}
           <div>
             <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              CORE MODULES
+              MÓDULOS DE ENGENHARIA
             </p>
             <div className="space-y-1">
-              {coreTools.map((tool) => (
+              {devModules.map((tool) => (
                 <button
                   key={tool.id}
                   type="button"
@@ -557,83 +327,17 @@ export function Sidebar({
             </div>
           </div>
 
-          {/* EXECUTIVO */}
-          <div>
-            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              EXECUTIVO
-            </p>
-            <div className="space-y-1">
-              {executiveTools.map((tool) => (
-                <button
-                  key={tool.id}
-                  type="button"
-                  onClick={() => selectTab(tool.id)}
-                  className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm text-left transition-all ${getNavButtonClass(
-                    tool.id
-                  )}`}
-                >
-                  <span className={`shrink-0 ${getIconClass(tool.id)}`}>{tool.icon}</span>
-                  <span className="truncate">{tool.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* INTELIGÊNCIA */}
-          <div>
-            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              INTELIGÊNCIA
-            </p>
-            <div className="space-y-1">
-              {aiTools.map((tool) => (
-                <button
-                  key={tool.id}
-                  type="button"
-                  onClick={() => selectTab(tool.id)}
-                  className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm text-left transition-all ${getNavButtonClass(
-                    tool.id
-                  )}`}
-                >
-                  <span className={`shrink-0 ${getIconClass(tool.id)}`}>{tool.icon}</span>
-                  <span className="truncate">{tool.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* FERRAMENTAS */}
-          <div>
-            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              FERRAMENTAS
-            </p>
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => {
-                  onExportExtractorReport();
-                  onCloseMobile?.();
-                }}
-                className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm text-left transition-all text-[#4A4640] hover:bg-[#EFECE6] hover:text-[#B45309]"
-              >
-                <span className="shrink-0 text-[#57534E] opacity-80 group-hover:text-[#B45309]">
-                  <Download size={20} />
-                </span>
-                <span className="truncate">Extrator Bitrix24</span>
-              </button>
-            </div>
-          </div>
-
-          {/* EMPRESAS & MOTORES CLI (SVGs Oficiais 1.1 a 1.4) */}
+          {/* MOTORES CLI (SVGs Oficiais 1.1 a 1.4) */}
           <div className="pt-4 border-t border-[#E5E0D8]">
             <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              MOTORES CLI (1.1 – 1.5)
+              MOTORES CLI (1.1 – 1.4)
             </p>
             <div className="space-y-1">
               {cliTools.map((tool) => (
                 <button
                   key={tool.id}
                   type="button"
-                  onClick={() => selectTab('dashboard')}
+                  onClick={() => selectTab('terminal')}
                   className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-mono text-[#0284C7] hover:bg-[#EFECE6] transition-all"
                 >
                   <span className="flex items-center gap-2.5 truncate">
