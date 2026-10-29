@@ -25,6 +25,8 @@ interface TerminalHubViewProps {
   activeFile: ProjectFile;
   files: ProjectFile[];
   isExecutingCli: boolean;
+  executionProgressPct?: number;
+  activeCliCommand?: string;
   healthById?: Record<
     string,
     {
@@ -91,6 +93,8 @@ export const TerminalHubView: React.FC<TerminalHubViewProps> = ({
   activeFile,
   files,
   isExecutingCli,
+  executionProgressPct = 0,
+  activeCliCommand = '',
   healthById,
   onExecuteCommand,
   onClearLogs,
@@ -294,6 +298,27 @@ export const TerminalHubView: React.FC<TerminalHubViewProps> = ({
               </button>
             </div>
           </div>
+
+          {/* Inline Terminal Loading & Progress Bar */}
+          {(isExecutingCli || executionProgressPct > 0) && (
+            <div
+              role="status"
+              data-testid="terminal-inline-progress"
+              className="px-4 py-2 bg-[#FFFDF9] border-b border-[#B83314]/35 space-y-1"
+            >
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="text-[#B83314] font-bold">
+                  Executando no Terminal: $ {activeCliCommand || 'cli task'}
+                </span>
+                <span className="text-[#B45309] font-bold tabular-nums">
+                  {Math.max(8, executionProgressPct)}%
+                </span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-[#F3EFE6] overflow-hidden">
+                <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-[#0284C7] via-[#E11D74] to-[#B83314] animate-pulse" />
+              </div>
+            </div>
+          )}
 
           {/* Terminal Output Stream */}
           <div

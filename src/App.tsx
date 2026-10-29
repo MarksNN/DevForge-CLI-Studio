@@ -1,5 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Save, Terminal } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Play,
+  Save,
+  Sparkles,
+  Menu,
+  Terminal,
+} from 'lucide-react';
 import {
   createInitialWorkspaceState,
   parseCliCommand,
@@ -21,18 +27,16 @@ import { GitGithubView } from './components/GitGithubView';
 import { TasksAndCiView } from './components/TasksAndCiView';
 import { ChatbookView } from './components/ChatbookView';
 import { CompanyLogoSvg } from './components/CompanyLogos';
+import { GlobalSearchBar } from './components/GlobalSearchBar';
+import { CliExecutionProgressBar } from './components/CliExecutionProgressBar';
 import {
   Sidebar,
   SidebarTabType,
   SIDEBAR_ITEM_METADATA,
   OperationBrand,
 } from './components/Sidebar';
-import { FloatingChatbook } from './components/FloatingChatbook';
-import { TopBar, type TopView } from './components/TopBar';
-import { useVoiceCommand } from './hooks/useVoiceCommand';
-import { interpretVoiceCommand } from './voice/interpretVoice';
 
-type ActiveWorkspaceTab = TopView;
+type ActiveWorkspaceTab = 'terminal' | 'editor' | 'github' | 'tasks' | 'chatbook';
 
 const STORAGE_KEY = 'devforge_workspace_state_v2';
 const CHATBOOK_STORAGE_KEY = 'devforge_chatbook_state_v2';
@@ -93,22 +97,17 @@ export default function App() {
     loadPersistedChatbook()
   );
   const [activeTab, setActiveTab] = useState<ActiveWorkspaceTab>('terminal');
-  const [activeSidebarTab, setActiveSidebarTab] = useState<SidebarTabType>('dashboard');
-  const [activeBrand, setActiveBrand] = useState<OperationBrand>('atlasgr');
+  const [activeSidebarTab, setActiveSidebarTab] = useState<SidebarTabType>('terminal');
+  const [activeBrand, setActiveBrand] = useState<OperationBrand>('devforge');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [chatbookOpen, setChatbookOpen] = useState(false);
-  const [chatbookSource, setChatbookSource] = useState<SidebarTabType | null>(null);
-  const [chatbookHint, setChatbookHint] = useState<string | null>(
-    SIDEBAR_ITEM_METADATA.chatbook.description
-  );
-  const [voiceFeedback, setVoiceFeedback] = useState<string | null>(null);
-  const [clock, setClock] = useState(formatCurrentTime);
-  const voice = useVoiceCommand();
   const [activeFilePath, setActiveFilePath] = useState<string>('src/core/orderProcessor.ts');
   const [quickCliInput, setQuickCliInput] = useState<string>('');
   const [lastSavedAt, setLastSavedAt] = useState<string>('10:00:00');
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [isExecutingCli, setIsExecutingCli] = useState(false);
+  const [executionProgressPct, setExecutionProgressPct] = useState<number>(0);
+  const [activeCliProvider, setActiveCliProvider] = useState<CliProviderId>('gemini');
+  const [activeCliCommand, setActiveCliCommand] = useState<string>('');
   const [agentHealth, setAgentHealth] = useState<
     Array<{
       id: string;
@@ -152,24 +151,10 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    const id = window.setInterval(() => setClock(formatCurrentTime()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (!voiceFeedback && !voice.error) return;
-    const id = window.setTimeout(() => {
-      setVoiceFeedback(null);
-      voice.clearError();
-    }, 4600);
-    return () => window.clearTimeout(id);
-  }, [voiceFeedback, voice.error, voice.clearError]);
-
   const activeFile =
     workspace.files.find((f) => f.path === activeFilePath) || workspace.files[0];
 
-  const currentModuleMeta = SIDEBAR_ITEM_METADATA[activeSidebarTab];
+  const currentModuleMeta = SIDEBAR_ITEM_METADATA[activeSidebarTab] || SIDEBAR_ITEM_METADATA.terminal;
 
   const quickAutocompleteList = getCliAutocompleteSuggestions(
     quickCliInput,
@@ -180,42 +165,21 @@ export default function App() {
   const handleSelectTopView = (view: ActiveWorkspaceTab) => {
     setActiveTab(view);
     const defaultSidebarMap: Record<ActiveWorkspaceTab, SidebarTabType> = {
-      terminal: 'dashboard',
+      terminal: 'terminal',
       editor: 'editor',
-      github: 'crm',
-      tasks: 'activities',
+      github: 'github',
+      tasks: 'tasks',
+      chatbook: 'chatbook',
     };
     setActiveSidebarTab(defaultSidebarMap[view]);
   };
 
-  const openChatbook = (source: SidebarTabType = 'chatbook') => {
-    const meta = SIDEBAR_ITEM_METADATA[source];
-    setChatbookOpen(true);
-    setChatbookSource(source);
-    setChatbookHint(meta?.description ?? null);
-  };
-
-  const toggleChatbook = () => {
-    setChatbookOpen((open) => {
-      if (open) return false;
-      setChatbookSource('chatbook');
-      setChatbookHint(SIDEBAR_ITEM_METADATA.chatbook.description);
-      return true;
-    });
-  };
-
   const handleSelectSidebarTab = (tab: SidebarTabType) => {
-    const meta = SIDEBAR_ITEM_METADATA[tab];
-    if (meta?.workspaceView === 'chatbook') {
-      if (chatbookOpen && chatbookSource === tab) {
-        setChatbookOpen(false);
-        return;
-      }
-      openChatbook(tab);
-      return;
-    }
     setActiveSidebarTab(tab);
-    if (meta) setActiveTab(meta.workspaceView);
+    const meta = SIDEBAR_ITEM_METADATA[tab];
+    if (meta) {
+      setActiveTab(meta.workspaceView);
+    }
   };
 
   const handleGlobalSaveWorkspace = () => {
@@ -227,7 +191,7 @@ export default function App() {
       // Ignore quota errors
     }
     setLastSavedAt(timeStr);
-    setSaveToast(`Workspace, arquivos locais e Chatbook salvos às ${timeStr}.`);
+    setSaveToast(`Workspace, arquivos locais e Notebook IA salvos às ${timeStr}.`);
   };
 
   const appendTerminalLog = (
@@ -257,24 +221,12 @@ export default function App() {
     }));
   };
 
-  const handleExportExtractorReport = () => {
-    const timeStr = formatCurrentTime();
-    appendTerminalLog(
-      'gh',
-      'gh api /repos/devforge/core-engine/releases --export bitrix24-snapshot.json',
-      `[Extrator Bitrix24 & CLI] Snapshot exportado às ${timeStr} (${workspace.files.length} arquivos, ${workspace.tasks.length} tarefas, ${workspace.pullRequests.length} PRs).`
-    );
-    setSaveToast(
-      `Extrator Bitrix24 & CLI: Relatório JSON sincronizado e salvo no workspace às ${timeStr}.`
-    );
-  };
-
   const handleResetWorkspace = () => {
     const fresh = createInitialWorkspaceState();
     setWorkspace(fresh);
     setChatbookMessages(INITIAL_CHATBOOK_MESSAGES.map((m) => ({ ...m })));
     setActiveFilePath('src/core/orderProcessor.ts');
-    setActiveSidebarTab('dashboard');
+    setActiveSidebarTab('terminal');
     setActiveTab('terminal');
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -403,8 +355,30 @@ export default function App() {
     });
   };
 
-  const runOrchestrator = async (rawCommand: string, hintAgent?: Exclude<CliProviderId, 'system'>) => {
+  const runWithVisualProgress = async (
+    rawCommand: string,
+    provider: CliProviderId,
+    action: () => Promise<void> | void
+  ) => {
+    setActiveCliProvider(provider);
+    setActiveCliCommand(rawCommand);
     setIsExecutingCli(true);
+    setExecutionProgressPct(18);
+    await new Promise((r) => setTimeout(r, 85));
+    setExecutionProgressPct(52);
+    await new Promise((r) => setTimeout(r, 85));
+    setExecutionProgressPct(84);
+    try {
+      await action();
+      setExecutionProgressPct(100);
+      await new Promise((r) => setTimeout(r, 180));
+    } finally {
+      setIsExecutingCli(false);
+      setExecutionProgressPct(0);
+    }
+  };
+
+  const runOrchestrator = async (rawCommand: string, hintAgent?: Exclude<CliProviderId, 'system'>) => {
     try {
       const response = await fetch('/api/orchestrator/run', {
         method: 'POST',
@@ -452,8 +426,6 @@ export default function App() {
         rawCommand,
         `${local.synthesis}\n\n${local.results.map((item) => item.output).join('\n\n')}\n\nServidor indisponível (${error instanceof Error ? error.message : 'erro'}).`
       );
-    } finally {
-      setIsExecutingCli(false);
     }
   };
 
@@ -464,76 +436,78 @@ export default function App() {
     const parsed = parseCliCommand(rawCommand);
     const provider = forcedProvider && forcedProvider !== 'system' ? forcedProvider : parsed.provider;
 
-    if (parsed.binary === 'devforge') {
-      await runOrchestrator(rawCommand);
-      return;
-    }
+    await runWithVisualProgress(rawCommand, provider, async () => {
+      if (parsed.binary === 'devforge') {
+        await runOrchestrator(rawCommand);
+        return;
+      }
 
-    if (
-      parsed.binary === 'npm' &&
-      (parsed.subcommand === 'i' || parsed.subcommand === 'install')
-    ) {
-      const pkgArg = parsed.args.find((a) => !a.startsWith('-')) || 'axios';
-      const isDev = parsed.args.includes('-D') || parsed.args.includes('--save-dev');
-      handleInstallDependency(pkgArg, isDev);
-      return;
-    }
+      if (
+        parsed.binary === 'npm' &&
+        (parsed.subcommand === 'i' || parsed.subcommand === 'install')
+      ) {
+        const pkgArg = parsed.args.find((a) => !a.startsWith('-')) || 'axios';
+        const isDev = parsed.args.includes('-D') || parsed.args.includes('--save-dev');
+        handleInstallDependency(pkgArg, isDev);
+        return;
+      }
 
-    if (provider === 'gemini' && parsed.subcommand === 'docs') {
-      const targetPath =
-        parsed.args.find((a) => !a.startsWith('-')) || activeFile.path;
-      const targetFile =
-        workspace.files.find((f) => f.path === targetPath) || activeFile;
-      const docResult = injectJsDocHeaders(targetFile.content, targetFile.path);
-      handleSaveFileContent(targetFile.path, docResult.documentedCode);
-      appendTerminalLog(
-        'gemini',
-        rawCommand,
-        `[Gemini CLI 1.2] Documentação JSDoc injetada em ${targetFile.path} (${docResult.functionsDocumented} funções atualizadas).`
-      );
-      return;
-    }
+      if (provider === 'gemini' && parsed.subcommand === 'docs') {
+        const targetPath =
+          parsed.args.find((a) => !a.startsWith('-')) || activeFile.path;
+        const targetFile =
+          workspace.files.find((f) => f.path === targetPath) || activeFile;
+        const docResult = injectJsDocHeaders(targetFile.content, targetFile.path);
+        handleSaveFileContent(targetFile.path, docResult.documentedCode);
+        appendTerminalLog(
+          'gemini',
+          rawCommand,
+          `[Gemini CLI 1.2] Documentação JSDoc injetada em ${targetFile.path} (${docResult.functionsDocumented} funções atualizadas).`
+        );
+        return;
+      }
 
-    if (provider === 'gh' && parsed.subcommand === 'pr' && parsed.args[0] === 'list') {
-      const openPrs = workspace.pullRequests
-        .filter((p) => p.status === 'Open')
-        .map(
-          (p) =>
-            `#${p.number}  ${p.title}  [${p.sourceBranch} -> ${p.targetBranch}] (${p.checks})`
-        )
-        .join('\n');
-      appendTerminalLog(
-        'gh',
-        rawCommand,
-        openPrs || 'Nenhum Pull Request aberto no momento.'
-      );
-      return;
-    }
+      if (provider === 'gh' && parsed.subcommand === 'pr' && parsed.args[0] === 'list') {
+        const openPrs = workspace.pullRequests
+          .filter((p) => p.status === 'Open')
+          .map(
+            (p) =>
+              `#${p.number}  ${p.title}  [${p.sourceBranch} -> ${p.targetBranch}] (${p.checks})`
+          )
+          .join('\n');
+        appendTerminalLog(
+          'gh',
+          rawCommand,
+          openPrs || 'Nenhum Pull Request aberto no momento.'
+        );
+        return;
+      }
 
-    if (provider === 'grok' && parsed.subcommand === 'analyze') {
-      const targetPath =
-        parsed.args.find((a) => !a.startsWith('-')) || activeFile.path;
-      const targetFile =
-        workspace.files.find((f) => f.path === targetPath) || activeFile;
-      const issues = analyzeCodeLocally(targetFile);
-      const summary = issues
-        .map((iss) => `[${iss.severity}] L${iss.line} (${iss.rule}): ${iss.message}`)
-        .join('\n');
-      appendTerminalLog(
-        'grok',
-        rawCommand,
-        `[Grok CLI 1.1] Diagnóstico para ${targetFile.path}:\n${summary}`
-      );
-      return;
-    }
+      if (provider === 'grok' && parsed.subcommand === 'analyze') {
+        const targetPath =
+          parsed.args.find((a) => !a.startsWith('-')) || activeFile.path;
+        const targetFile =
+          workspace.files.find((f) => f.path === targetPath) || activeFile;
+        const issues = analyzeCodeLocally(targetFile);
+        const summary = issues
+          .map((iss) => `[${iss.severity}] L${iss.line} (${iss.rule}): ${iss.message}`)
+          .join('\n');
+        appendTerminalLog(
+          'grok',
+          rawCommand,
+          `[Grok CLI 1.1] Diagnóstico para ${targetFile.path}:\n${summary}`
+        );
+        return;
+      }
 
-    if (provider === 'codex' && parsed.subcommand === 'test') {
-      handleRunTestSuite();
-      return;
-    }
+      if (provider === 'codex' && parsed.subcommand === 'test') {
+        handleRunTestSuite();
+        return;
+      }
 
-    const hint = provider === 'system' ? undefined : provider;
-    await runOrchestrator(rawCommand, hint);
+      const hint = provider === 'system' ? undefined : provider;
+      await runOrchestrator(rawCommand, hint);
+    });
   };
 
   const handleQuickCliSubmit = async (e: React.FormEvent) => {
@@ -848,69 +822,255 @@ export default function App() {
     setTimeout(() => setIsRunningPipeline(false), 200);
   };
 
-  const voiceApi = useRef({
-    save: handleGlobalSaveWorkspace,
-    execute: handleExecuteCommand,
-    chat: handleSendChatbookMessage,
-    navigate: handleSelectTopView,
-  });
-  voiceApi.current = {
-    save: handleGlobalSaveWorkspace,
-    execute: handleExecuteCommand,
-    chat: handleSendChatbookMessage,
-    navigate: handleSelectTopView,
-  };
-
-  useEffect(() => {
-    const said = voice.transcript;
-    if (!said) return;
-    voice.clearTranscript();
-    const action = interpretVoiceCommand(said);
-    if (action.kind === 'save') {
-      voiceApi.current.save();
-      setVoiceFeedback('Workspace salvo por voz.');
-      return;
-    }
-    if (action.kind === 'open-chat') {
-      openChatbook('chatbook');
-      setVoiceFeedback('Chatbook aberto.');
-      return;
-    }
-    if (action.kind === 'close-chat') {
-      setChatbookOpen(false);
-      setVoiceFeedback('Chatbook recolhido.');
-      return;
-    }
-    if (action.kind === 'navigate') {
-      voiceApi.current.navigate(action.view);
-      const labels = { terminal: 'Painel', editor: 'Editor', github: 'Git', tasks: 'Agenda' };
-      setVoiceFeedback(labels[action.view] + ' aberto.');
-      return;
-    }
-    if (action.kind === 'execute') {
-      void voiceApi.current.execute(action.command);
-      setVoiceFeedback('Executando: ' + action.command);
-      return;
-    }
-    openChatbook('chatbook');
-    setVoiceFeedback('Pergunta enviada ao ' + action.agent.toUpperCase() + '.');
-    void voiceApi.current.chat(action.agent, action.text);
-  }, [voice.transcript, voice.clearTranscript]);
-
   return (
-    <div className="relative h-screen overflow-hidden">
-      <div className="app-atmosphere" aria-hidden="true">
-        <div className="orb orb-a" />
-        <div className="orb orb-b" />
-        <div className="orb orb-c" />
+    <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#0284C7]">
+      {/* Top Bar / Sidebar Superior (Modo Light) */}
+      <header className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 border-b border-[#E5E0D8] bg-[#FFFDF9] sticky top-0 z-30">
+        {/* Zone 1: Mobile Menu Trigger + Single Brand Wordmark */}
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen((prev) => !prev)}
+            aria-label="Alternar Sidebar Lateral"
+            className="lg:hidden p-1.5 rounded-lg border border-[#E5E0D8] text-[#B83314] hover:bg-[#F3EFE6]"
+          >
+            <Menu size={18} />
+          </button>
+          <a
+            href="#terminal"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSelectTopView('terminal');
+            }}
+            className="text-lg font-bold tracking-tight text-[#B83314] font-display whitespace-nowrap shrink-0"
+          >
+            DevForge CLI Studio
+          </a>
+        </div>
+
+        {/* Zone 2: Global Search Bar in Top Bar */}
+        <GlobalSearchBar
+          files={workspace.files}
+          tasks={workspace.tasks}
+          terminalLogs={workspace.terminalLogs}
+          onSelectFileResult={(filePath) => {
+            setActiveFilePath(filePath);
+            handleSelectTopView('editor');
+          }}
+          onSelectTaskResult={(_taskId, linkedFile) => {
+            setActiveFilePath(linkedFile);
+            handleSelectTopView('tasks');
+          }}
+          onSelectLogResult={(cmd) => {
+            setQuickCliInput(cmd);
+            handleSelectTopView('terminal');
+          }}
+          onExecuteCommandFromSearch={(cmd, provider) => {
+            handleSelectTopView('terminal');
+            handleExecuteCommand(cmd, provider);
+          }}
+        />
+
+        {/* Zone 3: 5 concise single-line text navigation links */}
+        <nav
+          aria-label="Sidebar Superior Principal"
+          className="hidden xl:flex items-center gap-5 text-sm font-semibold"
+        >
+          <a
+            href="#terminal"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSelectTopView('terminal');
+            }}
+            className={`transition-colors whitespace-nowrap shrink-0 pb-0.5 ${
+              activeTab === 'terminal'
+                ? 'text-[#B83314] border-b-2 border-[#B83314]'
+                : 'text-[#57534E] hover:text-[#0284C7]'
+            }`}
+          >
+            Terminal & CLIs
+          </a>
+          <a
+            href="#editor"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSelectTopView('editor');
+            }}
+            className={`transition-colors whitespace-nowrap shrink-0 pb-0.5 ${
+              activeTab === 'editor'
+                ? 'text-[#B83314] border-b-2 border-[#B83314]'
+                : 'text-[#57534E] hover:text-[#0284C7]'
+            }`}
+          >
+            Editor & IA
+          </a>
+          <a
+            href="#github"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSelectTopView('github');
+            }}
+            className={`transition-colors whitespace-nowrap shrink-0 pb-0.5 ${
+              activeTab === 'github'
+                ? 'text-[#B83314] border-b-2 border-[#B83314]'
+                : 'text-[#57534E] hover:text-[#0284C7]'
+            }`}
+          >
+            Git & PRs
+          </a>
+          <a
+            href="#tasks"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSelectTopView('tasks');
+            }}
+            className={`transition-colors whitespace-nowrap shrink-0 pb-0.5 ${
+              activeTab === 'tasks'
+                ? 'text-[#B83314] border-b-2 border-[#B83314]'
+                : 'text-[#57534E] hover:text-[#0284C7]'
+            }`}
+          >
+            Tarefas & CI/CD
+          </a>
+          <a
+            href="#chatbook"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSelectTopView('chatbook');
+            }}
+            className={`transition-colors whitespace-nowrap shrink-0 pb-0.5 ${
+              activeTab === 'chatbook'
+                ? 'text-[#E11D74] border-b-2 border-[#E11D74]'
+                : 'text-[#57534E] hover:text-[#E11D74]'
+            }`}
+          >
+            Notebook IA
+          </a>
+        </nav>
+
+        {/* Zone 4: 1 primary action button */}
+        <div className="flex items-center shrink-0">
+          <button
+            type="button"
+            onClick={handleGlobalSaveWorkspace}
+            className="px-4 py-2 text-xs font-bold text-[#FFF4D6] bg-[#B83314] hover:bg-[#9E2B10] rounded-xl shadow-xs transition-colors whitespace-nowrap shrink-0"
+          >
+            Salvar Workspace
+          </button>
+        </div>
+      </header>
+
+      {/* Sub-Barra / Sidebar Superior de Ações Rápidas, SVGs das Empresas & Autocompletar */}
+      <div
+        aria-label="Barra Superior Multi-CLI e Autocompletar"
+        className="px-6 py-2.5 border-b border-[#E5E0D8] bg-[#F3EFE6] flex flex-wrap items-center justify-between gap-4"
+      >
+        {/* Company SVG Badges in Top Sidebar */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {workspace.cliTools.map((tool) => (
+            <button
+              key={tool.id}
+              type="button"
+              onClick={() => {
+                setQuickCliInput(`${tool.binary} `);
+              }}
+              className="px-2.5 py-1 rounded-lg border border-[#E5E0D8] bg-[#FFFDF9] hover:border-[#0284C7] text-xs font-mono text-[#0284C7] hover:text-[#B45309] transition-colors flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <CompanyLogoSvg provider={tool.id} className="w-4 h-4 shrink-0" />
+              <span className="font-semibold">
+                {tool.code} {tool.name}
+              </span>
+              <span className="text-[#E11D74]">({tool.avgLatencyMs}ms)</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Global Quick CLI Input with Live Autocomplete */}
+        <form
+          onSubmit={handleQuickCliSubmit}
+          className="flex-1 min-w-[280px] max-w-xl flex items-center gap-2"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-[#D97706] shrink-0" />
+          <input
+            type="text"
+            value={quickCliInput}
+            onChange={(e) => setQuickCliInput(e.target.value)}
+            aria-label="Comando rápido com autocompletar"
+            placeholder="Autocompletar: devforge, grok, gemini, codex, claude ou gh..."
+            className="w-full bg-[#FFFDF9] border border-[#E5E0D8] rounded-lg px-3 py-1.5 text-xs font-mono text-[#0284C7] placeholder:text-[#78716C] focus:outline-none focus:border-[#0284C7]"
+          />
+          <button
+            type="submit"
+            disabled={isExecutingCli}
+            className="px-3.5 py-1.5 bg-[#0284C7]/12 hover:bg-[#0284C7]/20 border border-[#0284C7]/40 text-[#0284C7] text-xs font-bold rounded-lg flex items-center gap-1 whitespace-nowrap shrink-0"
+          >
+            <Play className="w-3 h-3 text-[#E11D74]" />
+            <span>Executar</span>
+          </button>
+        </form>
+
+        {/* Save Status Indicator */}
+        <div className="text-xs font-mono font-semibold text-[#B45309] tabular-nums flex items-center gap-2 whitespace-nowrap shrink-0">
+          <Save className="w-3.5 h-3.5 text-[#0284C7]" />
+          <span>Salvo: {lastSavedAt}</span>
+        </div>
       </div>
-      <div className="relative z-10 flex h-full min-h-0">
+
+      {/* Visual CLI Execution Loading & Progress Bar */}
+      <CliExecutionProgressBar
+        isExecuting={isExecutingCli}
+        progressPct={executionProgressPct}
+        activeProvider={activeCliProvider}
+        activeCommand={activeCliCommand}
+      />
+
+      {/* Live Autocomplete Dropdown strip when typing in Top Bar */}
+      {quickCliInput.trim().length > 0 && quickAutocompleteList.length > 0 && (
+        <div className="px-6 py-2 bg-[#FFFDF9] border-b border-[#D97706]/35 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-mono font-semibold text-[#B45309]">
+            Sugestões Autocompletar:
+          </span>
+          {quickAutocompleteList.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                setQuickCliInput('');
+                handleExecuteCommand(item.command, item.provider);
+              }}
+              className="px-2.5 py-1 rounded-lg border border-[#E11D74]/40 bg-[#F3EFE6] text-xs font-mono text-[#0284C7] hover:text-[#B83314] flex items-center gap-1.5"
+            >
+              <CompanyLogoSvg provider={item.provider} className="w-3.5 h-3.5" />
+              <span>{item.command}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {saveToast && (
+        <div
+          role="status"
+          className="px-6 py-2 bg-[#FFFDF9] border-b border-[#D97706]/40 text-xs font-mono text-[#B45309] flex items-center justify-between"
+        >
+          <span>{saveToast}</span>
+          <button
+            type="button"
+            onClick={() => setSaveToast(null)}
+            className="text-[#E11D74] hover:text-[#DC2626] font-bold"
+          >
+            Fechar
+          </button>
+        </div>
+      )}
+
+      {/* Main Workspace Canvas: Sidebar Lateral Light Mode + Main Content Viewport */}
+      <div className="flex-1 flex flex-col lg:flex-row">
         <Sidebar
           activeTab={activeSidebarTab}
           onSelectTab={handleSelectSidebarTab}
           activeBrand={activeBrand}
           onToggleBrand={() =>
-            setActiveBrand((prev) => (prev === 'atlasgr' ? 'totaltrack' : 'atlasgr'))
+            setActiveBrand((prev) => (prev === 'devforge' ? 'multicli' : 'devforge'))
           }
           cliTools={workspace.cliTools}
           files={workspace.files}
@@ -918,84 +1078,53 @@ export default function App() {
           onSelectFile={(path) => setActiveFilePath(path)}
           onSaveWorkspace={handleGlobalSaveWorkspace}
           onResetWorkspace={handleResetWorkspace}
-          onExportExtractorReport={handleExportExtractorReport}
           mobileOpen={mobileSidebarOpen}
           onCloseMobile={() => setMobileSidebarOpen(false)}
-          chatbookOpen={chatbookOpen}
-          chatbookSource={chatbookSource}
         />
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <TopBar
-            activeView={activeTab}
-            onSelectView={handleSelectTopView}
-            onOpenMobileNav={() => setMobileSidebarOpen((prev) => !prev)}
-            cliTools={workspace.cliTools}
-            onFocusTool={(binary) => setQuickCliInput(binary + ' ')}
-            command={quickCliInput}
-            onCommandChange={setQuickCliInput}
-            onCommandSubmit={handleQuickCliSubmit}
-            suggestions={quickAutocompleteList}
-            onRunSuggestion={(item) => {
-              setQuickCliInput('');
-              void handleExecuteCommand(item.command, item.provider);
-            }}
-            isExecuting={isExecutingCli}
-            branch={workspace.activeBranch}
-            savedAt={lastSavedAt}
-            onSave={handleGlobalSaveWorkspace}
-            listening={voice.listening}
-            voiceSupported={voice.supported}
-            voiceInterim={voice.interim}
-            voiceFeedback={voiceFeedback}
-            voiceError={voice.error}
-            onToggleVoice={voice.toggle}
-            clock={clock}
-          />
+        {/* Main Content Viewport */}
+        <main className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+          {/* Contextual Active Sidebar Module Header */}
+          <div className="rounded-xl border border-[#E5E0D8] bg-[#FFFDF9] p-4 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5 text-xs font-mono">
+                <span className="text-[#B83314] font-bold uppercase tracking-widest">
+                  {currentModuleMeta.section}
+                </span>
+                <span className="text-[#78716C]">•</span>
+                <span className="text-[#B45309] font-semibold">
+                  Operação: {activeBrand === 'devforge' ? 'DevForge Core' : 'Multi-CLI Engine'}
+                </span>
+                <span className="text-[#78716C]">•</span>
+                <span className="text-[#0284C7] font-semibold">
+                  Branch: {workspace.activeBranch}
+                </span>
+              </div>
+              <h2 className="text-lg font-bold text-[#B83314] font-display">
+                {currentModuleMeta.label}
+              </h2>
+              <p className="text-xs text-[#57534E]">{currentModuleMeta.description}</p>
+            </div>
 
-          <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-28 sm:px-6 lg:px-8">
-            <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
-              <section className="relative overflow-hidden rounded-3xl border border-white/80 bg-white/80 p-4 shadow-[0_18px_40px_-28px_rgba(68,40,20,0.45)] backdrop-blur sm:p-5">
-                <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-[#E11D74] via-[#B83314] to-[#0284C7]" />
-                <div className="flex flex-wrap items-center justify-between gap-4 pl-3">
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
-                      <span className="font-bold uppercase tracking-[0.16em] text-[#B83314]">{currentModuleMeta.section}</span>
-                      <span className="rounded-full bg-[#FFF4E5] px-2 py-0.5 font-semibold text-[#B45309]">
-                        {activeBrand === 'atlasgr' ? 'AtlasGR' : 'Total Trac'}
-                      </span>
-                      <span className="rounded-full bg-[#E0F2FE] px-2 py-0.5 font-semibold text-[#0284C7]">
-                        {workspace.activeBranch}
-                      </span>
-                      {chatbookOpen && (
-                        <span className="rounded-full bg-[#FDE7F1] px-2 py-0.5 font-semibold text-[#E11D74]">
-                          Chatbook flutuante
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="font-display text-xl font-bold text-[#9F2D12]">{currentModuleMeta.label}</h2>
-                    <p className="max-w-3xl text-xs leading-relaxed text-[#57534E]">{currentModuleMeta.description}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleExecuteCommand(currentModuleMeta.defaultCliCommand)}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-[#B83314]/30 bg-[#B83314]/10 px-3 py-2 text-xs font-bold text-[#B83314]"
-                    >
-                      <Terminal className="h-3.5 w-3.5 text-[#0284C7]" />
-                      <span className="max-w-[16rem] truncate font-mono">{currentModuleMeta.defaultCliCommand}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleGlobalSaveWorkspace}
-                      className="inline-flex items-center gap-1.5 rounded-2xl border border-[#0284C7]/30 bg-[#0284C7]/10 px-3 py-2 text-xs font-bold text-[#0284C7]"
-                    >
-                      <Save className="h-3.5 w-3.5 text-[#B45309]" />
-                      Salvar módulo
-                    </button>
-                  </div>
-                </div>
-              </section>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => handleExecuteCommand(currentModuleMeta.defaultCliCommand)}
+                className="px-3.5 py-2 rounded-xl bg-[#B83314]/12 hover:bg-[#B83314]/20 border border-[#B83314]/40 text-xs font-mono font-bold text-[#B83314] flex items-center gap-2 transition-colors"
+              >
+                <Terminal className="w-3.5 h-3.5 text-[#0284C7]" />
+                <span>Executar CLI: {currentModuleMeta.defaultCliCommand}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleGlobalSaveWorkspace}
+                className="px-3 py-2 rounded-xl bg-[#0284C7]/12 hover:bg-[#0284C7]/20 border border-[#0284C7]/40 text-xs font-bold text-[#0284C7] flex items-center gap-1.5 transition-colors"
+              >
+                <Save className="w-3.5 h-3.5 text-[#B45309]" />
+                <span>Salvar Módulo</span>
+              </button>
+            </div>
+          </div>
 
           {activeTab === 'terminal' && (
             <TerminalHubView
@@ -1005,16 +1134,15 @@ export default function App() {
               activeFile={activeFile}
               files={workspace.files}
               isExecutingCli={isExecutingCli}
+              executionProgressPct={executionProgressPct}
+              activeCliCommand={activeCliCommand}
               healthById={Object.fromEntries(agentHealth.map((item) => [item.id, item]))}
               onExecuteCommand={handleExecuteCommand}
               onClearLogs={() =>
                 setWorkspace((prev) => ({ ...prev, terminalLogs: [] }))
               }
               onSaveWorkspaceSnapshot={handleGlobalSaveWorkspace}
-              onNavigateView={(view) => {
-                if (view === 'chatbook') openChatbook('chatbook');
-                else handleSelectTopView(view);
-              }}
+              onNavigateView={(view) => handleSelectTopView(view)}
             />
           )}
 
@@ -1067,50 +1195,23 @@ export default function App() {
             />
           )}
 
-
-            </div>
-          </main>
-        </div>
+          {activeTab === 'chatbook' && (
+            <ChatbookView
+              messages={chatbookMessages}
+              activeFile={activeFile}
+              activeBranch={workspace.activeBranch}
+              files={workspace.files}
+              onSendMessage={handleSendChatbookMessage}
+              onToggleSaveMessage={handleToggleSaveChatbookMessage}
+              onSaveAllChatbook={handleGlobalSaveWorkspace}
+              onInsertSnippetToEditor={handleInsertSnippetToEditor}
+              onExecuteSuggestedCommand={(cmd, agent) =>
+                handleExecuteCommand(cmd, agent)
+              }
+            />
+          )}
+        </main>
       </div>
-
-      <FloatingChatbook
-        open={chatbookOpen}
-        title="Chatbook"
-        subtitle={activeFile.name + ' · ' + workspace.activeBranch}
-        hint={chatbookHint}
-        listening={voice.listening}
-        voiceSupported={voice.supported}
-        onToggleVoice={voice.toggle}
-        onToggle={toggleChatbook}
-      >
-        <ChatbookView
-          messages={chatbookMessages}
-          activeFile={activeFile}
-          activeBranch={workspace.activeBranch}
-          files={workspace.files}
-          onSendMessage={handleSendChatbookMessage}
-          onToggleSaveMessage={handleToggleSaveChatbookMessage}
-          onSaveAllChatbook={handleGlobalSaveWorkspace}
-          onInsertSnippetToEditor={handleInsertSnippetToEditor}
-          onExecuteSuggestedCommand={(cmd, agent) => handleExecuteCommand(cmd, agent)}
-          listening={voice.listening}
-          voiceSupported={voice.supported}
-          interimTranscript={voice.interim}
-          onToggleVoice={voice.toggle}
-        />
-      </FloatingChatbook>
-
-      {saveToast && (
-        <div
-          role="status"
-          className="fixed bottom-5 left-4 z-50 flex max-w-md items-center gap-3 rounded-2xl border border-[#F6E7C1] bg-[#FFFDF9] px-4 py-3 text-xs text-[#B45309] shadow-xl animate-pop"
-        >
-          <span className="min-w-0 flex-1">{saveToast}</span>
-          <button type="button" onClick={() => setSaveToast(null)} className="font-bold text-[#E11D74]">
-            Fechar
-          </button>
-        </div>
-      )}
     </div>
   );
 }

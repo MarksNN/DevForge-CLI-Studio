@@ -9,6 +9,8 @@ import {
   computeLineDiff,
   synthesizeUnitTestForFile,
   getCliAutocompleteSuggestions,
+  searchGlobalWorkspace,
+  computeCliExecutionStage,
 } from './cliEngine';
 
 test('parseCliCommand routes grok, gemini, codex and gh commands accurately', () => {
@@ -109,3 +111,30 @@ test('getCliAutocompleteSuggestions filters by query and returns matching comman
   const defaultList = getCliAutocompleteSuggestions('');
   assert.equal(defaultList.length, 6);
 });
+
+test('searchGlobalWorkspace finds matching files, tasks, and terminal logs', () => {
+  const state = createInitialWorkspaceState();
+  const fileHits = searchGlobalWorkspace('orderProcessor', state.files, state.tasks, state.terminalLogs);
+  assert.ok(fileHits.some((item) => item.kind === 'file' && item.targetFilePath === 'src/core/orderProcessor.ts'));
+
+  const taskHits = searchGlobalWorkspace('DEV-101', state.files, state.tasks, state.terminalLogs);
+  assert.ok(taskHits.some((item) => item.kind === 'task' && item.title.includes('DEV-101')));
+
+  const logHits = searchGlobalWorkspace('gh status', state.files, state.tasks, state.terminalLogs);
+  assert.ok(logHits.some((item) => item.kind === 'log'));
+});
+
+test('computeCliExecutionStage clamps percentage and returns progressive stage labels', () => {
+  const startStage = computeCliExecutionStage(15, 'grok', 'grok analyze src/auth/tokenGuard.ts');
+  assert.equal(startStage.clampedPct, 15);
+  assert.ok(startStage.stageLabel.includes('GROK CLI'));
+
+  const midStage = computeCliExecutionStage(55, 'gemini', 'gemini docs');
+  assert.equal(midStage.clampedPct, 55);
+  assert.ok(midStage.stageLabel.includes('GEMINI CLI'));
+
+  const doneStage = computeCliExecutionStage(110, 'gh', 'gh pr list');
+  assert.equal(doneStage.clampedPct, 100);
+  assert.ok(doneStage.stageLabel.includes('concluída'));
+});
+

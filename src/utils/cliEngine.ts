@@ -1053,4 +1053,129 @@ export function getCliAutocompleteSuggestions(
     .slice(0, 7);
 }
 
+export interface GlobalSearchResult {
+  id: string;
+  kind: 'file' | 'task' | 'log';
+  title: string;
+  subtitle: string;
+  badge: string;
+  provider: CliProviderId;
+  targetFilePath?: string;
+  targetTaskId?: string;
+  targetCommand?: string;
+}
 
+/**
+ * Searches across local workspace files, development tasks, and terminal logs
+ * for the global search bar in the top header.
+ */
+export function searchGlobalWorkspace(
+  query: string,
+  files: ProjectFile[],
+  tasks: DevTask[],
+  terminalLogs: TerminalLogEntry[]
+): GlobalSearchResult[] {
+  const normalized = query.trim().toLowerCase();
+  const results: GlobalSearchResult[] = [];
+
+  for (const file of files) {
+    const matches =
+      !normalized ||
+      file.path.toLowerCase().includes(normalized) ||
+      file.name.toLowerCase().includes(normalized) ||
+      file.content.toLowerCase().includes(normalized);
+    if (matches) {
+      results.push({
+        id: `search-file-${file.path}`,
+        kind: 'file',
+        title: file.path,
+        subtitle: `Pasta: ${file.folder} · Cobertura: ${file.coveragePct}% · Atualizado: ${file.lastUpdated}`,
+        badge: file.modified ? 'Modificado' : 'Arquivo Local',
+        provider: 'gemini',
+        targetFilePath: file.path,
+        targetCommand: `gemini docs ${file.path} --write-jsdoc`,
+      });
+    }
+  }
+
+  for (const task of tasks) {
+    const matches =
+      !normalized ||
+      task.key.toLowerCase().includes(normalized) ||
+      task.title.toLowerCase().includes(normalized) ||
+      task.automatedCommand.toLowerCase().includes(normalized) ||
+      task.linkedFile.toLowerCase().includes(normalized);
+    if (matches) {
+      results.push({
+        id: `search-task-${task.id}`,
+        kind: 'task',
+        title: `${task.key} · ${task.title}`,
+        subtitle: `Arquivo: ${task.linkedFile} · CLI: $ ${task.automatedCommand}`,
+        badge: `${task.status} (${task.priority})`,
+        provider: task.cliAgent,
+        targetTaskId: task.id,
+        targetFilePath: task.linkedFile,
+        targetCommand: task.automatedCommand,
+      });
+    }
+  }
+
+  for (const log of [...terminalLogs].reverse()) {
+    const matches =
+      !normalized ||
+      log.command.toLowerCase().includes(normalized) ||
+      log.output.toLowerCase().includes(normalized) ||
+      log.provider.toLowerCase().includes(normalized);
+    if (matches) {
+      results.push({
+        id: `search-log-${log.id}`,
+        kind: 'log',
+        title: `$ ${log.command}`,
+        subtitle: log.output.split('\n')[0] || 'Execução registrada no terminal',
+        badge: `${log.provider.toUpperCase()} · ${log.timestamp}`,
+        provider: log.provider,
+        targetCommand: log.command,
+      });
+    }
+  }
+
+  return results.slice(0, 12);
+}
+
+/**
+ * Computes human-readable progress stage metadata for CLI command execution.
+ */
+export function computeCliExecutionStage(
+  progressPct: number,
+  provider: CliProviderId,
+  command: string
+): {
+  clampedPct: number;
+  stageLabel: string;
+} {
+  const clampedPct = Math.max(0, Math.min(100, Math.round(progressPct)));
+  const providerName = provider === 'system' ? 'DevForge Orchestrator' : `${provider.toUpperCase()} CLI`;
+
+  if (clampedPct < 30) {
+    return {
+      clampedPct,
+      stageLabel: `[${providerName}] Inicializando contexto local para "${command}"...`,
+    };
+  }
+  if (clampedPct < 75) {
+    return {
+      clampedPct,
+      stageLabel: `[${providerName}] Processando requisição à API & analisando AST...`,
+    };
+  }
+  if (clampedPct < 100) {
+    return {
+      clampedPct,
+      stageLabel: `[${providerName}] Consolidando saída e sincronizando logs do terminal...`,
+    };
+  }
+  return {
+    clampedPct: 100,
+    stageLabel: `[${providerName}] Execução concluída com sucesso.`,
+  };
+}
