@@ -1,53 +1,88 @@
 @import "tailwindcss";
 
+/* Explicitly neutralize any dark: variant in Tailwind v4 so system dark mode never applies */
+@custom-variant dark (&:where([data-theme="never-dark"]));
+
+@theme {
+  --color-canvas: #FAF8F5;
+  --color-surface: #FFFDF9;
+  --color-recessed: #F3EFE6;
+  --color-line: #E5E0D8;
+  --color-neon-blue: #0284C7;
+  --color-neon-gold: #B45309;
+  --color-neon-pink: #E11D74;
+  --color-neon-red: #B83314;
+  --color-neon-gray: #57534E;
+}
+
 @layer base {
-  :root {
-    color-scheme: light;
+  :root,
+  html,
+  body {
+    color-scheme: only light;
     --font-display: 'Outfit', system-ui, -apple-system, sans-serif;
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    /* Light Mode Neon Palette: Blue, Gold, Pink, Red, Gray */
+    /* High-Contrast Light Mode Surfaces & Borders */
+    --bg-canvas: #FAF8F5;
+    --bg-surface: #FFFDF9;
+    --bg-recessed: #F3EFE6;
+    --bg-hover: #EFECE6;
+    --border-line: #E5E0D8;
+
+    /* High-Contrast Light Mode Palette (Blue, Gold, Pink, Red, Gray — zero white/black text) */
     --neon-blue: #0284C7;
     --neon-gold: #B45309;
     --neon-pink: #E11D74;
-    --neon-red: #C83214;
+    --neon-red: #B83314;
     --neon-gray: #57534E;
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: #FAF8F5;
-    color: #0284C7;
+    background-color: var(--bg-canvas);
+    color: var(--neon-blue);
     letter-spacing: 0.01em;
   }
 
-  button, input, select, textarea, option {
+  button,
+  input,
+  select,
+  textarea,
+  option {
     color: inherit;
   }
 
-  h1, h2, h3, .font-display {
+  h1,
+  h2,
+  h3,
+  .font-display {
     font-family: var(--font-display);
   }
 
-  h1, h2 {
+  h1,
+  h2 {
     text-wrap: balance;
   }
 
-  code, pre, .font-mono, .tabular-nums {
+  code,
+  pre,
+  .font-mono,
+  .tabular-nums {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
 }
 
-/* Light Mode subtle scrollbars */
+/* High-Contrast Light Mode scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F4F1EA;
+  background: var(--bg-recessed);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -56,5 +91,5 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(225, 29, 116, 0.55);
+  background: rgba(184, 51, 20, 0.55);
 }

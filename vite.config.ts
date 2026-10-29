@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 
+// Vite configuration with @tailwindcss/vite locked to Light Mode (see tailwind.config.js & src/index.css)
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
