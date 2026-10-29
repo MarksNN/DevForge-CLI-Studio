@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Home,
   LayoutTemplate,
@@ -11,6 +11,7 @@ import {
   FileBarChart,
   Zap,
   ChevronRight,
+  ChevronDown,
   Database,
   BarChart3,
   CalendarDays,
@@ -309,6 +310,8 @@ interface SidebarProps {
   mobileOpen?: boolean;
   /** Chamado ao fechar a navegação mobile (backdrop, Escape ou seleção de item). */
   onCloseMobile?: () => void;
+  chatbookOpen?: boolean;
+  chatbookSource?: SidebarTabType | null;
 }
 
 export function Sidebar({
@@ -325,8 +328,25 @@ export function Sidebar({
   onExportExtractorReport,
   mobileOpen = false,
   onCloseMobile,
+  chatbookOpen = false,
+  chatbookSource = null,
 }: SidebarProps) {
   const isAtlas = activeBrand === 'atlasgr';
+  const [query, setQuery] = useState('');
+  const [openSections, setOpenSections] = useState({
+    core: true,
+    executive: true,
+    ai: false,
+    tools: true,
+    engines: false,
+    files: false,
+    admin: true,
+  });
+  const searching = query.trim().length > 0;
+  const matches = (label: string) => label.toLowerCase().includes(query.trim().toLowerCase());
+  const toggleSection = (key: keyof typeof openSections) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const selectTab = (tab: SidebarTabType) => {
     onSelectTab(tab);
@@ -379,23 +399,33 @@ export function Sidebar({
   // Estilo Light Mode idêntico à imagem enviada pelo usuário:
   // Item ativo em pílula rounded-xl vermelha/terracota (#B83314) ou azul (#0284C7) com texto dourado-creme (#FFF4D6, zero branco puro)
   // Itens inativos em cinza-ardósia (#4A4640) sobre fundo claro (#FAF8F5)
+  const isPanelLive = (id: SidebarTabType) => chatbookOpen && chatbookSource === id;
+
   const getNavButtonClass = (id: SidebarTabType) => {
     const isActive = activeTab === id;
     if (isActive) {
       return isAtlas
-        ? 'bg-[#B83314] text-[#FFF4D6] shadow-md shadow-[#B83314]/25'
-        : 'bg-[#0284C7] text-[#FFF4D6] shadow-md shadow-[#0284C7]/25';
+        ? 'bg-gradient-to-r from-[#C2410C] to-[#9F2D12] text-[#FFF7ED] shadow-[0_10px_18px_-14px_rgba(184,51,20,0.95)]'
+        : 'bg-gradient-to-r from-[#0284C7] to-[#0369A1] text-[#FFF7ED] shadow-[0_10px_18px_-14px_rgba(2,132,199,0.95)]';
     }
-    return 'text-[#4A4640] hover:bg-[#EFECE6] hover:text-[#B83314]';
+    if (isPanelLive(id)) {
+      return 'bg-gradient-to-r from-[#E11D74] to-[#BE185D] text-[#FFF7ED] shadow-[0_10px_18px_-14px_rgba(225,29,116,0.95)]';
+    }
+    return 'text-[#44403C] hover:bg-white hover:text-[#B83314]';
   };
 
   const getIconClass = (id: SidebarTabType) => {
-    const isActive = activeTab === id;
-    if (isActive) {
-      return 'text-[#FFF4D6] opacity-100';
-    }
-    return 'text-[#57534E] opacity-80 group-hover:text-[#B83314]';
+    if (activeTab === id || isPanelLive(id)) return 'text-[#FFF7ED]';
+    return 'text-[#78716C] group-hover:text-[#B83314]';
   };
+
+  const visibleCore = coreTools.filter((tool) => matches(tool.label));
+  const visibleExecutive = executiveTools.filter((tool) => matches(tool.label));
+  const visibleAi = aiTools.filter((tool) => matches(tool.label));
+  const visibleAdmin = adminTools.filter((tool) => matches(tool.label));
+  const visibleEngines = cliTools.filter((tool) => matches(`${tool.code} ${tool.name}`));
+  const visibleFiles = files.filter((file) => matches(file.name) || matches(file.path));
+  const showExtractor = matches('Extrator Bitrix24');
 
   return (
     <>
@@ -409,11 +439,12 @@ export function Sidebar({
       )}
 
       <aside
-        aria-label="Sidebar Lateral de Navegação e Workspace"
-        className={`fixed inset-y-0 left-0 z-40 w-64 h-full flex flex-col transition-transform duration-300 bg-[#FAF8F5] border-r border-[#E5E0D8] lg:static lg:translate-x-0 shrink-0 ${
+        aria-label="Sidebar lateral"
+        className={`fixed inset-y-0 left-0 z-40 flex h-full w-72 shrink-0 flex-col border-r border-[#E7E0D6] bg-[#FFFCF8]/92 shadow-[8px_0_40px_-28px_rgba(68,40,20,0.45)] backdrop-blur-xl transition-transform duration-300 lg:static lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
+        <div className="h-1.5 shrink-0 bg-gradient-to-r from-[#E11D74] via-[#B83314] to-[#0284C7]" />
         {/* Context Switcher (Modo Light) */}
         <div className="p-4 border-b border-[#E5E0D8]">
           {/* Logo Principal da Operação */}
@@ -533,15 +564,53 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* Navigation Links (Idêntico ao layout e seções da referência em Light Mode) */}
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-          {/* CORE MODULES */}
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-3">
+          <label className="relative block">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#A8A29E]" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar módulo..."
+              aria-label="Buscar módulo"
+              className="w-full rounded-xl border border-[#E7E0D6] bg-white py-2 pl-9 pr-3 text-xs text-[#44403C] placeholder:text-[#A8A29E] focus:border-[#0284C7] focus:outline-none focus:ring-2 focus:ring-[#0284C7]/15"
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={() => selectTab('chatbook')}
+            className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-bold transition ${
+              chatbookOpen
+                ? 'bg-gradient-to-r from-[#E11D74] to-[#B83314] text-[#FFF7ED] shadow-[0_12px_24px_-16px_rgba(225,29,116,0.9)]'
+                : 'bg-white text-[#B83314] ring-1 ring-[#F3D0E0] hover:ring-[#E11D74]'
+            }`}
+          >
+            <MessageSquare size={18} />
+            <span className="min-w-0 flex-1">
+              <span className="block">Chatbook flutuante</span>
+              <span className={`block text-[10px] font-semibold ${chatbookOpen ? 'text-[#FFE7D1]' : 'text-[#78716C]'}`}>
+                {chatbookOpen ? 'Aberto sobre o workspace' : 'Conversa sem sair da tela'}
+              </span>
+            </span>
+          </button>
+
+          {visibleCore.length + visibleExecutive.length + visibleAi.length + visibleAdmin.length + visibleEngines.length + visibleFiles.length === 0 && !showExtractor && (
+            <p className="px-3 text-xs text-[#78716C]">Nenhum módulo com esse nome.</p>
+          )}
+
+          {visibleCore.length > 0 && (
           <div>
-            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              CORE MODULES
-            </p>
+            <button
+              type="button"
+              onClick={() => toggleSection('core')}
+              className="mb-1.5 flex w-full items-center justify-between px-3 text-[10px] font-black uppercase tracking-[0.16em] text-[#8A8175] hover:text-[#B83314]"
+            >
+              <span>Core</span>
+              <ChevronDown size={14} className={`transition-transform ${searching || openSections.core ? '' : '-rotate-90'}`} />
+            </button>
+            {(searching || openSections.core) && (
             <div className="space-y-1">
-              {coreTools.map((tool) => (
+              {visibleCore.map((tool) => (
                 <button
                   key={tool.id}
                   type="button"
@@ -555,15 +624,23 @@ export function Sidebar({
                 </button>
               ))}
             </div>
+            )}
           </div>
+          )}
 
-          {/* EXECUTIVO */}
+          {visibleExecutive.length > 0 && (
           <div>
-            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              EXECUTIVO
-            </p>
+            <button
+              type="button"
+              onClick={() => toggleSection('executive')}
+              className="mb-1.5 flex w-full items-center justify-between px-3 text-[10px] font-black uppercase tracking-[0.16em] text-[#8A8175] hover:text-[#B83314]"
+            >
+              <span>Executivo</span>
+              <ChevronDown size={14} className={`transition-transform ${searching || openSections.executive ? '' : '-rotate-90'}`} />
+            </button>
+            {(searching || openSections.executive) && (
             <div className="space-y-1">
-              {executiveTools.map((tool) => (
+              {visibleExecutive.map((tool) => (
                 <button
                   key={tool.id}
                   type="button"
@@ -577,15 +654,23 @@ export function Sidebar({
                 </button>
               ))}
             </div>
+            )}
           </div>
+          )}
 
-          {/* INTELIGÊNCIA */}
+          {visibleAi.length > 0 && (
           <div>
-            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              INTELIGÊNCIA
-            </p>
+            <button
+              type="button"
+              onClick={() => toggleSection('ai')}
+              className="mb-1.5 flex w-full items-center justify-between px-3 text-[10px] font-black uppercase tracking-[0.16em] text-[#8A8175] hover:text-[#B83314]"
+            >
+              <span>Inteligência</span>
+              <ChevronDown size={14} className={`transition-transform ${searching || openSections.ai ? '' : '-rotate-90'}`} />
+            </button>
+            {(searching || openSections.ai) && (
             <div className="space-y-1">
-              {aiTools.map((tool) => (
+              {visibleAi.map((tool) => (
                 <button
                   key={tool.id}
                   type="button"
@@ -599,13 +684,21 @@ export function Sidebar({
                 </button>
               ))}
             </div>
+            )}
           </div>
+          )}
 
-          {/* FERRAMENTAS */}
+          {showExtractor && (
           <div>
-            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              FERRAMENTAS
-            </p>
+            <button
+              type="button"
+              onClick={() => toggleSection('tools')}
+              className="mb-1.5 flex w-full items-center justify-between px-3 text-[10px] font-black uppercase tracking-[0.16em] text-[#8A8175] hover:text-[#B83314]"
+            >
+              <span>Ferramentas</span>
+              <ChevronDown size={14} className={`transition-transform ${searching || openSections.tools ? '' : '-rotate-90'}`} />
+            </button>
+            {(searching || openSections.tools) && (
             <div className="space-y-1">
               <button
                 type="button"
@@ -613,48 +706,62 @@ export function Sidebar({
                   onExportExtractorReport();
                   onCloseMobile?.();
                 }}
-                className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm text-left transition-all text-[#4A4640] hover:bg-[#EFECE6] hover:text-[#B45309]"
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-[#44403C] transition hover:bg-white hover:text-[#B45309]"
               >
-                <span className="shrink-0 text-[#57534E] opacity-80 group-hover:text-[#B45309]">
-                  <Download size={20} />
-                </span>
+                <Download size={20} className="shrink-0 text-[#B45309]" />
                 <span className="truncate">Extrator Bitrix24</span>
               </button>
             </div>
+            )}
           </div>
+          )}
 
-          {/* EMPRESAS & MOTORES CLI (SVGs Oficiais 1.1 a 1.4) */}
-          <div className="pt-4 border-t border-[#E5E0D8]">
-            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              MOTORES CLI (1.1 – 1.5)
-            </p>
+          {visibleEngines.length > 0 && (
+          <div className="border-t border-[#E7E0D6] pt-4">
+            <button
+              type="button"
+              onClick={() => toggleSection('engines')}
+              className="mb-1.5 flex w-full items-center justify-between px-3 text-[10px] font-black uppercase tracking-[0.16em] text-[#8A8175] hover:text-[#B83314]"
+            >
+              <span>Motores CLI</span>
+              <ChevronDown size={14} className={`transition-transform ${searching || openSections.engines ? '' : '-rotate-90'}`} />
+            </button>
+            {(searching || openSections.engines) && (
             <div className="space-y-1">
-              {cliTools.map((tool) => (
+              {visibleEngines.map((tool) => (
                 <button
                   key={tool.id}
                   type="button"
                   onClick={() => selectTab('dashboard')}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-mono text-[#0284C7] hover:bg-[#EFECE6] transition-all"
+                  className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-mono text-[#0284C7] transition hover:bg-white"
                 >
-                  <span className="flex items-center gap-2.5 truncate">
-                    <CompanyLogoSvg provider={tool.id} className="w-4 h-4 shrink-0" />
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <CompanyLogoSvg provider={tool.id} className="h-4 w-4 shrink-0" />
                     <span className="truncate font-semibold">
                       {tool.code} {tool.name}
                     </span>
                   </span>
-                  <span className="text-[#B45309] font-semibold shrink-0">{tool.avgLatencyMs}ms</span>
+                  <span className="shrink-0 font-semibold text-[#B45309]">{tool.avgLatencyMs}ms</span>
                 </button>
               ))}
             </div>
+            )}
           </div>
+          )}
 
-          {/* PASTAS & ARQUIVOS LOCAIS */}
-          <div className="pt-4 border-t border-[#E5E0D8]">
-            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              PASTAS LOCAIS
-            </p>
+          {visibleFiles.length > 0 && (
+          <div className="border-t border-[#E7E0D6] pt-4">
+            <button
+              type="button"
+              onClick={() => toggleSection('files')}
+              className="mb-1.5 flex w-full items-center justify-between px-3 text-[10px] font-black uppercase tracking-[0.16em] text-[#8A8175] hover:text-[#B83314]"
+            >
+              <span>Arquivos locais</span>
+              <ChevronDown size={14} className={`transition-transform ${searching || openSections.files ? '' : '-rotate-90'}`} />
+            </button>
+            {(searching || openSections.files) && (
             <div className="space-y-1">
-              {files.map((file) => (
+              {visibleFiles.map((file) => (
                 <button
                   key={file.path}
                   type="button"
@@ -662,64 +769,72 @@ export function Sidebar({
                     onSelectFile(file.path);
                     selectTab('editor');
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-mono transition-all ${
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-mono transition ${
                     activeFilePath === file.path && activeTab === 'editor'
-                      ? 'bg-[#EFECE6] text-[#B83314] border border-[#B83314]/30 font-bold'
-                      : 'text-[#57534E] hover:bg-[#EFECE6] hover:text-[#0284C7]'
+                      ? 'border border-[#B83314]/30 bg-white font-bold text-[#B83314]'
+                      : 'text-[#57534E] hover:bg-white hover:text-[#0284C7]'
                   }`}
                 >
-                  <span className="flex items-center gap-2 truncate">
-                    <FileCode className="w-3.5 h-3.5 shrink-0 text-[#0284C7]" />
+                  <span className="flex min-w-0 items-center gap-2">
+                    <FileCode className="h-3.5 w-3.5 shrink-0 text-[#0284C7]" />
                     <span className="truncate">{file.name}</span>
                   </span>
-                  {file.modified && (
-                    <span className="text-[10px] text-[#E11D74] font-bold shrink-0">M</span>
-                  )}
+                  {file.modified && <span className="shrink-0 text-[10px] font-bold text-[#E11D74]">M</span>}
                 </button>
               ))}
             </div>
+            )}
           </div>
+          )}
 
-          {/* ADMINISTRAÇÃO */}
-          <div className="pt-4 border-t border-[#E5E0D8]">
-            <p className="px-3 mb-2 text-[10px] font-black uppercase tracking-widest text-[#78716C]">
-              ADMINISTRAÇÃO
-            </p>
-            <div className="space-y-1">
-              {adminTools.map((tool) => (
+          <div className="border-t border-[#E7E0D6] pt-4">
+            <button
+              type="button"
+              onClick={() => toggleSection('admin')}
+              className="mb-1.5 flex w-full items-center justify-between px-3 text-[10px] font-black uppercase tracking-[0.16em] text-[#8A8175] hover:text-[#B83314]"
+            >
+              <span>Administração</span>
+              <ChevronDown size={14} className={`transition-transform ${searching || openSections.admin ? '' : '-rotate-90'}`} />
+            </button>
+            {(searching || openSections.admin) && (
+            <div>
+              {visibleAdmin.length > 0 && (
+              <div className="space-y-1">
+                {visibleAdmin.map((tool) => (
+                  <button
+                    key={tool.id}
+                    type="button"
+                    onClick={() => selectTab(tool.id)}
+                    className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${getNavButtonClass(
+                      tool.id
+                    )}`}
+                  >
+                    <span className={`shrink-0 ${getIconClass(tool.id)}`}>{tool.icon}</span>
+                    <span className="truncate">{tool.label}</span>
+                  </button>
+                ))}
+              </div>
+              )}
+              <div className="mt-3 space-y-1.5 px-1">
                 <button
-                  key={tool.id}
                   type="button"
-                  onClick={() => selectTab(tool.id)}
-                  className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm text-left transition-all ${getNavButtonClass(
-                    tool.id
-                  )}`}
+                  onClick={onSaveWorkspace}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#0284C7]/30 bg-[#0284C7]/10 px-3 py-2 text-xs font-bold text-[#0284C7] hover:bg-[#0284C7]/20"
                 >
-                  <span className={`shrink-0 ${getIconClass(tool.id)}`}>{tool.icon}</span>
-                  <span className="truncate">{tool.label}</span>
+                  <Save className="h-3.5 w-3.5 text-[#B45309]" />
+                  Salvar tudo agora
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={onResetWorkspace}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#E7E0D6] bg-white px-3 py-1.5 text-xs font-semibold text-[#57534E] hover:text-[#DC2626]"
+                >
+                  <RotateCcw className="h-3 w-3 text-[#DC2626]" />
+                  Restaurar workspace
+                </button>
+              </div>
             </div>
-
-            {/* Ações rápidas de Salvar e Restaurar */}
-            <div className="mt-3 px-1 space-y-1.5">
-              <button
-                type="button"
-                onClick={onSaveWorkspace}
-                className="w-full py-2 px-3 rounded-xl text-xs font-bold text-[#0284C7] bg-[#0284C7]/10 hover:bg-[#0284C7]/20 border border-[#0284C7]/40 transition-colors flex items-center justify-center gap-2"
-              >
-                <Save className="w-3.5 h-3.5 text-[#B45309]" />
-                <span>Salvar Tudo Agora</span>
-              </button>
-              <button
-                type="button"
-                onClick={onResetWorkspace}
-                className="w-full py-1.5 px-3 rounded-xl text-xs font-semibold text-[#57534E] hover:text-[#DC2626] bg-[#F3EFE6] border border-[#E5E0D8] transition-colors flex items-center justify-center gap-2"
-              >
-                <RotateCcw className="w-3 h-3 text-[#DC2626]" />
-                <span>Restaurar Workspace</span>
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </aside>
